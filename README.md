@@ -12,7 +12,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | # | Lesson | Topics | Status |
 |---|---|---|---|
 | 00 | Skeleton | Gradle KTS, version catalog, Compose, wrapper | ✅ |
-| 01 | Kotlin deep dive | sealed interface, variance, value class, inline/reified, contracts, DSL | ⬜ |
+| 01 | Kotlin deep dive | sealed interface, variance, value class, inline/reified, contracts, DSL | ✅ |
 | 02 | Coroutines | suspend, structured concurrency, dispatchers, cancellation | ⬜ |
 | 03 | Flow | cold vs hot, operators, StateFlow/SharedFlow, flowOn/buffer | ⬜ |
 | 04 | Retrofit + OkHttp | kotlinx.serialization, interceptors, error mapping | ⬜ |
@@ -28,6 +28,12 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 14 | Kotlin performance | inline/value class trade-offs, KSP | ⬜ |
 | 15 | CI + code quality | GitHub Actions, detekt/ktlint, coverage, R8 | ⬜ |
 | 16 | Runtime performance | Compose stability, baseline profiles, measurement | ⬜ |
+
+## Highlights so far
+
+- `AppResult<out T>` — a sealed result type with covariance and `Failure : AppResult<Nothing>`,
+  rethrowing `CancellationException` instead of swallowing it.
+- `SearchQueryBuilder` — a `@DslMarker` type-safe builder for GitHub search syntax.
 
 ## Build
 

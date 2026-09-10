@@ -8,7 +8,7 @@ Téma: GitHub repo kereső app (Compose + Coroutines/Flow + Retrofit + Hilt + Ro
 | # | Lecke | Fő téma | Állapot |
 |---|---|---|---|
 | 00 | Skeleton | Gradle KTS, version catalog, Compose, wrapper | ✅ |
-| 01 | Kotlin mélyvíz | sealed interface, value class, inline/reified, delegates | ⬜ |
+| 01 | Kotlin mélyvíz | sealed interface, value class, inline/reified, delegates, DSL | ✅ |
 | 02 | Coroutines | suspend, structured concurrency, dispatcher, cancellation | ⬜ |
 | 03 | Flow | cold/hot, operátorok, StateFlow/SharedFlow, flowOn/buffer | ⬜ |
 | 04 | Retrofit + OkHttp | kotlinx.serialization, interceptorok, hibakezelés | ⬜ |

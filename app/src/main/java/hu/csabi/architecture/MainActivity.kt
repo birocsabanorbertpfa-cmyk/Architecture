@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import hu.csabi.architecture.core.model.SearchQuery
+import hu.csabi.architecture.feature.lab.CoroutineLabScreen
 import hu.csabi.architecture.core.model.Stars
 import hu.csabi.architecture.core.model.Username
 import hu.csabi.architecture.core.model.searchQuery
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             ArchitectureTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    WelcomeScreen(modifier = Modifier.padding(innerPadding))
+                    CoroutineLabScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
         }

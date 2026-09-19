@@ -15,12 +15,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Lesson 02 — a `viewModelScope` a structured concurrency belépési pontja Androidon.
+ * Lesson 02 — `viewModelScope` is the entry point of structured concurrency on Android.
  *
- * Egy `SupervisorJob` + `Dispatchers.Main.immediate`, amit az `onCleared()`
- * automatikusan lemond. Ezért nem szivárog a munka, ha a user elnavigál.
+ * It is a `SupervisorJob` plus `Dispatchers.Main.immediate`, cancelled automatically by
+ * `onCleared()`. That is what keeps work from leaking when the user navigates away.
  *
- * (Az állapotkezelés itt szándékosan primitív — StateFlow a 03., rendes UiState a 07. leckében.)
+ * State handling here is deliberately primitive — StateFlow arrives in lesson 03, a proper
+ * UiState in lesson 07.
  */
 class CoroutineLabViewModel(
     private val dispatchers: AppDispatchers = DefaultAppDispatchers,
@@ -37,8 +38,8 @@ class CoroutineLabViewModel(
     private val lab = CoroutineLab(dispatchers) { line -> appendLine(line) }
 
     /**
-     * A log írása Compose state-be történik, ami CSAK a main szálról biztonságos.
-     * A demók viszont IO/Default dispatcheren is futnak — ezért váltunk vissza.
+     * The log is Compose state, which is only safe to touch from the main thread, while the
+     * demos also run on IO/Default — hence the explicit switch back.
      */
     private suspend fun appendLine(line: String) = withContext(dispatchers.main) {
         val elapsed = System.currentTimeMillis() - startedAt
@@ -51,7 +52,7 @@ class CoroutineLabViewModel(
         startedAt = System.currentTimeMillis()
         runningDemo = demo.title
 
-        // A launch a viewModelScope GYEREKE lesz: a scope lemondása ezt is lemondja.
+        // This launch becomes a CHILD of viewModelScope: cancelling the scope cancels it.
         currentJob = viewModelScope.launch {
             try {
                 when (demo) {
@@ -63,32 +64,32 @@ class CoroutineLabViewModel(
                     Demo.Timeout -> lab.timeout()
                     Demo.Dispatchers -> lab.dispatchers()
                 }
-                appendLine("── kész ──")
+                appendLine("── done ──")
             } catch (cancellation: CancellationException) {
-                // A CancellationException normális vezérlési folyam, nem hiba.
-                // Lemondott contextben már nem lehet felfüggeszteni -> NonCancellable kell.
-                withContext(NonCancellable) { appendLine("── megszakítva ──") }
+                // CancellationException is normal control flow, not a failure.
+                // A cancelled context cannot suspend, so this needs NonCancellable.
+                withContext(NonCancellable) { appendLine("── cancelled ──") }
                 throw cancellation
             } catch (throwable: Throwable) {
-                appendLine("── hiba: ${throwable.message} ──")
+                appendLine("── error: ${throwable.message} ──")
             } finally {
                 runningDemo = null
             }
         }
     }
 
-    /** `cancel()` csak JELZI a lemondást; a coroutine a következő ellenőrzési ponton áll le. */
+    /** `cancel()` only SIGNALS cancellation; the coroutine stops at its next check point. */
     fun cancel() {
-        currentJob?.cancel(CancellationException("felhasználói megszakítás"))
+        currentJob?.cancel(CancellationException("cancelled by user"))
     }
 
     enum class Demo(val title: String) {
-        SequentialVsParallel("1. Szekvenciális vs. async"),
-        Cancellation("2. Kooperatív lemondás"),
+        SequentialVsParallel("1. Sequential vs. async"),
+        Cancellation("2. Cooperative cancellation"),
         Cleanup("3. Cleanup + NonCancellable"),
-        AllOrNothing("4. coroutineScope: mindent visz"),
-        Independent("5. supervisorScope: független ágak"),
+        AllOrNothing("4. coroutineScope: all or nothing"),
+        Independent("5. supervisorScope: independent children"),
         Timeout("6. withTimeout"),
-        Dispatchers("7. Dispatcher váltás"),
+        Dispatchers("7. Dispatcher switching"),
     }
 }

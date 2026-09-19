@@ -1,6 +1,6 @@
-# TODO / Backlog
+# Backlog
 
-- [ ] Végigmenni a README tanmenetén (00–16), lecke = commit.
-- [ ] Utána: a `C:\Csabi\AILearning` mappában lévő Kotlin Multiplatform interjús feladat témáit
-      beemelni ide (KMP shared modul, expect/actual, közös domain/data réteg, iOS target),
-      külön leckékként a 16 után.
+- [ ] Work through lessons 00–16 in the README, one commit per lesson.
+- [ ] Afterwards: fold in the Kotlin Multiplatform topics from the separate interview
+      exercise (shared module, expect/actual, shared domain/data layer, iOS target) as
+      additional lessons after 16.

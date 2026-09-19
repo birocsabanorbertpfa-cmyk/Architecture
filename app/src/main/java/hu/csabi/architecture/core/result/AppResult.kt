@@ -5,14 +5,16 @@ import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
 /**
- * Lesson 01 — sealed interface + generikus variancia.
+ * Lesson 01 — sealed interface + generic variance.
  *
- * `out T`: kovariáns, ezért `AppResult<Repo>` átadható `AppResult<Any>` helyére.
- * A `Failure` `AppResult<Nothing>`, így minden `AppResult<T>` altípusa — nem kell
- * típusparaméterrel bajlódni hibaágon.
+ * `out T` makes the type covariant, so an `AppResult<Repo>` is usable where an
+ * `AppResult<Any>` is expected. `Failure` is an `AppResult<Nothing>`, and since
+ * `Nothing` is a subtype of every type, a single `Failure` instance fits into any
+ * `AppResult<T>` — no type argument juggling on the error branch.
  *
- * Sealed interface (nem class): több hierarchiába is beilleszthető, és a `when`
- * kimerítő marad — nincs `else` ág, új altípus fordítási hibát ad.
+ * Sealed *interface* rather than class: it can take part in several hierarchies, and
+ * `when` stays exhaustive — no `else` branch, and a new subtype breaks compilation
+ * everywhere it needs handling.
  */
 sealed interface AppResult<out T> {
     data class Success<T>(val data: T) : AppResult<T>
@@ -30,13 +32,14 @@ fun <T> AppResult<T>.getOrNull(): T? = (this as? AppResult.Success)?.data
 fun <T> AppResult<T>.errorOrNull(): Throwable? = (this as? AppResult.Failure)?.error
 
 /**
- * `inline` + lambda: a `transform` a hívás helyére kerül, nincs Function objektum
- * allokáció és nincs extra stack frame. Ezért használunk `inline`-t rövid,
- * lambdát fogadó függvényeknél.
+ * `inline` + lambda: the body of `transform` is copied to the call site, so there is no
+ * `Function1` allocation and no extra stack frame. This is the right default for small
+ * functions taking a lambda — but not for large bodies, where the bytecode would be
+ * duplicated at every call site.
  */
 inline fun <T, R> AppResult<T>.map(transform: (T) -> R): AppResult<R> = when (this) {
     is AppResult.Success -> AppResult.Success(transform(data))
-    is AppResult.Failure -> this
+    is AppResult.Failure -> this // AppResult<Nothing> is also an AppResult<R>
 }
 
 inline fun <T, R> AppResult<T>.flatMap(transform: (T) -> AppResult<R>): AppResult<R> = when (this) {
@@ -52,8 +55,8 @@ inline fun <T> AppResult<T>.onFailure(action: (Throwable) -> Unit): AppResult<T>
 }
 
 /**
- * `reified`: futásidőben is megvan a típus, így `is T` írható — `inline` nélkül
- * a type erasure miatt ez lehetetlen lenne.
+ * `reified` keeps the type argument available at runtime, so `error is E` compiles into a
+ * real `instanceof`. Without `inline` + `reified`, type erasure would make this impossible.
  */
 inline fun <reified E : Throwable, T> AppResult<T>.recover(fallback: (E) -> T): AppResult<T> =
     when (this) {
@@ -62,8 +65,10 @@ inline fun <reified E : Throwable, T> AppResult<T>.recover(fallback: (E) -> T): 
     }
 
 /**
- * A `CancellationException` továbbdobása kulcsfontosságú lesz a 02. leckében:
- * ha elnyeljük, a coroutine cancellation elromlik.
+ * Unlike stdlib `runCatching`, this rethrows `CancellationException`.
+ *
+ * Coroutine cancellation is implemented by throwing it; swallowing it would keep a
+ * cancelled coroutine running and surface a bogus error on screen. See lesson 02.
  */
 inline fun <T> appRunCatching(block: () -> T): AppResult<T> = try {
     AppResult.Success(block())

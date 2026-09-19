@@ -3,11 +3,12 @@ package hu.csabi.architecture.core.model
 import java.util.Locale
 
 /**
- * Lesson 01 — value class.
+ * Lesson 01 — value classes.
  *
- * Runtime-ban `Long`/`String` marad (nincs allokáció), fordításkor viszont külön típus:
- * a `RepoId` és a `Stars` nem cserélhető össze. Az `inline` feloldódik, kivéve ha
- * nullable-ként vagy generikus paraméterként használjuk (`List<RepoId>` -> boxol).
+ * At runtime these stay a plain `Long`/`String`/`Int` (no allocation), but at compile time
+ * they are distinct types: a `RepoId` cannot be passed where `Stars` is expected. The
+ * wrapper is only materialised when the value is used as a nullable or as a generic type
+ * argument (`List<RepoId>` boxes).
  */
 @JvmInline
 value class RepoId(val value: Long) {
@@ -29,7 +30,7 @@ value class Username(val value: String) {
 value class Stars(val count: Int) : Comparable<Stars> {
     override fun compareTo(other: Stars): Int = count.compareTo(other.count)
 
-    /** 1234 -> "1.2k" */
+    /** 1234 -> "1.2k". Locale.US so the decimal separator does not depend on the device. */
     fun formatted(): String = when {
         count < 1_000 -> count.toString()
         count < 1_000_000 -> "%.1fk".format(Locale.US, count / 1_000.0)

@@ -3,15 +3,16 @@ package hu.csabi.architecture.core.model
 /**
  * Lesson 01 — type-safe builder DSL.
  *
- * A GitHub search API egy stringet vár: `compose language:Kotlin stars:>=100`.
- * Stringet összefűzni hívó oldalon hibalehetőség; DSL-lel a szabályok egy helyen vannak.
+ * The GitHub search API expects a single string: `compose language:Kotlin stars:>=100`.
+ * Concatenating that at every call site invites typos; a DSL keeps the syntax rules in
+ * one place and makes invalid queries hard to express.
  */
 @DslMarker
 annotation class SearchQueryDsl
 
 /**
- * A `@DslMarker` megakadályozza, hogy egymásba ágyazott builder blokkokban véletlenül
- * a külső receiver metódusát hívd — implicit receiver scope-ot korlátoz.
+ * `@DslMarker` restricts implicit receivers: inside a nested builder block you cannot
+ * accidentally call a method of the outer builder.
  */
 @SearchQueryDsl
 class SearchQueryBuilder internal constructor() {
@@ -35,7 +36,7 @@ class SearchQueryBuilder internal constructor() {
         qualifiers["stars"] = ">=${stars.count}"
     }
 
-    /** `infix`: `"topic" isEqualTo "android"` olvashatóbb a nyers map-írásnál. */
+    /** `infix` for readability: `"topic" isEqualTo "android"` beats raw map writes. */
     infix fun String.isEqualTo(value: String) {
         qualifiers[this] = value
     }
@@ -52,12 +53,12 @@ value class SearchQuery(val raw: String) {
 }
 
 /**
- * `block: SearchQueryBuilder.() -> Unit` = function type with receiver: a lambdán belül
- * `this` a builder, ezért írhatunk pontok nélkül. Ez adja a DSL-érzetet.
+ * `block: SearchQueryBuilder.() -> Unit` is a function type with receiver: inside the
+ * lambda `this` is the builder, which is what gives the DSL its shape.
  *
- * Szándékosan NEM `inline`: a public inline függvény nem érhet el `internal` API-t
- * (itt a konstruktort és a `build()`-et) — vagy `@PublishedApi` kellene, vagy marad
- * a sima hívás. Egy builder esetén az inline amúgy sem nyerne semmit.
+ * Deliberately not `inline`: a public inline function cannot access `internal` API (the
+ * constructor and `build()` here) without `@PublishedApi`, and inlining a builder call
+ * would buy nothing anyway.
  */
 fun searchQuery(block: SearchQueryBuilder.() -> Unit): SearchQuery =
     SearchQueryBuilder().apply(block).build()

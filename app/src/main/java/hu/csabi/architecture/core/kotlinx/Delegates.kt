@@ -6,9 +6,9 @@ import kotlin.reflect.KProperty
 /**
  * Lesson 01 — property delegation.
  *
- * A `by` operátor mögött csak konvenció van: `getValue` / `setValue`.
- * Itt egy map-alapú, típusos konfiguráció-olvasó — ugyanez a minta hajtja a
- * `by viewModels()`, `by lazy`, `by remember` hívásokat is.
+ * `by` is pure convention: the compiler only looks for `getValue` / `setValue`. This is a
+ * typed, map-backed config reader — the same mechanism behind `by lazy`, `by viewModels()`
+ * and `by remember`.
  */
 class ConfigSource(private val values: Map<String, String>) {
 
@@ -28,8 +28,8 @@ class ConfigSource(private val values: Map<String, String>) {
 }
 
 /**
- * Saját delegate osztály `operator fun getValue`-val: egyszer számol, cache-el,
- * de a `lazy`-vel ellentétben `reset()`-elhető.
+ * A hand-written delegate with `operator fun getValue`: computes once and caches, but
+ * unlike `lazy` it can be reset.
  */
 class ResettableLazy<T : Any>(private val initializer: () -> T) {
     @Volatile

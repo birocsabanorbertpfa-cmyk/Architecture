@@ -27,8 +27,8 @@ fun CoroutineLabScreen(
 ) {
     val listState = rememberLazyListState()
 
-    // Új sor érkezésekor görgetünk. A LaunchedEffect a Composable élettartamához köti
-    // a coroutine-t: ha a képernyő eltűnik, a scope lemondódik.
+    // Scroll as new lines arrive. LaunchedEffect ties the coroutine to the composable's
+    // lifetime: when the screen leaves composition, the scope is cancelled.
     LaunchedEffect(viewModel.logLines.size) {
         if (viewModel.logLines.isNotEmpty()) {
             listState.animateScrollToItem(viewModel.logLines.lastIndex)

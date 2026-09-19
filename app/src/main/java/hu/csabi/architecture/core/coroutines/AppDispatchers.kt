@@ -4,16 +4,16 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 /**
- * Lesson 02 — a dispatcher soha ne legyen bedrótozva.
+ * Lesson 02 — never hardcode a dispatcher.
  *
- * `Dispatchers.IO` közvetlen hívása a kódban teszteléskor fáj: nem tudod lecserélni
- * determinisztikus test dispatcherre. Ezért interface mögé tesszük — a 06. leckében
- * ezt fogja Hilt injektálni, a 10.-ben teszt dupla kerül a helyére.
+ * Calling `Dispatchers.IO` directly inside production code hurts in tests: it cannot be
+ * swapped for a deterministic test dispatcher. Hiding it behind an interface fixes that —
+ * lesson 06 injects this with Hilt, lesson 10 replaces it with a test double.
  *
- * - Main: UI. Csak állapotfrissítés, semmi blokkolás.
- * - IO: blokkoló hívások (hálózat, fájl, DB). Nagy, elasztikus pool — a szálak nagy
- *   része amúgy is I/O-ra vár.
- * - Default: CPU-igényes munka. Pool mérete = magok száma, mert többől nincs haszon.
+ * - Main: UI only. State updates, never blocking work.
+ * - IO: blocking calls (network, disk, database). Large elastic pool, since most of those
+ *   threads are parked waiting on I/O anyway.
+ * - Default: CPU-bound work. Pool size equals the core count, because more would not help.
  */
 interface AppDispatchers {
     val main: CoroutineDispatcher

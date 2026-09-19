@@ -57,7 +57,7 @@ fun WelcomeScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(text = "Architecture Playground", style = MaterialTheme.typography.headlineMedium)
-        Text(text = "Lesson 01 — Kotlin mélyvíz", style = MaterialTheme.typography.titleSmall)
+        Text(text = "Lesson 01 — Kotlin deep dive", style = MaterialTheme.typography.titleSmall)
         Text(text = "DSL query: ${demoQuery.raw}", style = MaterialTheme.typography.bodyMedium)
         Text(
             text = "AppResult.map: ${demoResult.getOrNull()}",

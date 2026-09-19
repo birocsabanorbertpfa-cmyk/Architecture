@@ -15,35 +15,36 @@ import kotlin.coroutines.coroutineContext
 import kotlin.system.measureTimeMillis
 
 /**
- * Lesson 02 — futtatható coroutine demók.
+ * Lesson 02 — runnable coroutine demos.
  *
- * Minden demó `suspend fun`: nem indít saját coroutine-t, nem ismer scope-ot.
- * Ez a helyes API-forma — a hívó dönti el, hol és meddig fut (structured concurrency).
+ * Every demo is a plain `suspend fun`: it never launches its own coroutine and never holds
+ * a scope. That is the correct shape for a suspending API — the caller decides where the
+ * work runs and how long it lives (structured concurrency).
  */
 class CoroutineLab(
     private val dispatchers: AppDispatchers,
     private val log: suspend (String) -> Unit,
 ) {
 
-    /** Szimulált hálózati hívás: felfüggeszt, nem blokkol szálat. */
+    /** Fake network call: suspends without blocking a thread. */
     private suspend fun fetch(name: String, millis: Long): String {
-        log("  $name indul   [${threadName()}]")
+        log("  $name started [${threadName()}]")
         delay(millis)
-        log("  $name kész")
+        log("  $name done")
         return name
     }
 
     // 1 ─────────────────────────────────────────────────────────────────────
     /**
-     * `delay` felfüggeszti a coroutine-t, de a szálat visszaadja a poolnak.
-     * Ezért fut le két 600 ms-os hívás párhuzamosan ~600 ms alatt egyetlen szálon is.
+     * `delay` suspends the coroutine but hands the thread back to the pool, which is why
+     * two 600 ms calls finish in ~600 ms in parallel — even on a single thread.
      */
     suspend fun sequentialVsParallel() {
         val sequential = measureTimeMillis {
             fetch("A", 600)
             fetch("B", 600)
         }
-        log("Szekvenciális: $sequential ms")
+        log("Sequential: $sequential ms")
 
         val parallel = measureTimeMillis {
             coroutineScope {
@@ -52,23 +53,23 @@ class CoroutineLab(
                 awaitAll(a, b)
             }
         }
-        log("Párhuzamos (async): $parallel ms")
+        log("Parallel (async): $parallel ms")
     }
 
     // 2 ─────────────────────────────────────────────────────────────────────
     /**
-     * A lemondás **kooperatív**: a coroutine attól nem áll le, hogy cancel()-t hívsz,
-     * csak akkor, ha felfüggesztési ponthoz ér (delay, withContext...) vagy maga
-     * ellenőrzi (`ensureActive()` / `isActive` / `yield()`).
+     * Cancellation is **cooperative**: calling `cancel()` does not stop anything by itself.
+     * A coroutine stops when it hits a suspension point (delay, withContext, ...) or checks
+     * for itself via `ensureActive()` / `isActive` / `yield()`.
      */
     suspend fun cooperativeCancellation() {
-        log("Kooperatív ciklus (ensureActive) — ez leáll cancel-re")
+        log("Cooperative loop (ensureActive) — this one reacts to cancel")
         withContext(dispatchers.default) {
             var i = 0
             while (i < 1_000_000_000) {
                 if (i % 50_000_000 == 0) {
-                    coroutineContext.ensureActive() // itt dob CancellationException-t
-                    log("  iteráció $i [${threadName()}]")
+                    coroutineContext.ensureActive() // throws CancellationException here
+                    log("  iteration $i [${threadName()}]")
                 }
                 i++
             }
@@ -76,79 +77,78 @@ class CoroutineLab(
     }
 
     /**
-     * Cleanup lemondáskor: a `finally` lefut, de benne **felfüggeszteni már nem lehet**,
-     * mert a coroutine context már cancelled. Aki mégis muszáj (pl. cache zárás),
-     * az `withContext(NonCancellable)`-be teszi.
+     * Cleanup on cancellation: `finally` does run, but you **cannot suspend inside it**
+     * because the context is already cancelled. Work that must still happen (closing a
+     * cache, flushing analytics) goes into `withContext(NonCancellable)`.
      */
     suspend fun cancellationCleanup() {
         try {
-            log("Erőforrás megnyitva")
+            log("Resource opened")
             delay(10_000)
         } finally {
             withContext(NonCancellable) {
                 delay(50)
-                log("Erőforrás lezárva (NonCancellable blokkban)")
+                log("Resource closed (inside NonCancellable)")
             }
         }
     }
 
     // 3 ─────────────────────────────────────────────────────────────────────
     /**
-     * `coroutineScope`: ha EGY gyerek hibázik, a scope lemondja az összes testvért,
-     * és a kivétel kibuborékol. "Minden vagy semmi" — ezt akarod, ha az eredmények
-     * együtt értelmesek (pl. user + repo lista egy képernyőhöz).
+     * `coroutineScope`: if ONE child fails, the scope cancels its siblings and rethrows.
+     * All-or-nothing — what you want when the results only make sense together (e.g. user
+     * profile + repo list for the same screen).
      */
     suspend fun allOrNothing() {
         try {
             coroutineScope {
-                async { fetch("gyors", 200) }
-                async { fetch("lassú", 2_000) }
+                async { fetch("fast", 200) }
+                async { fetch("slow", 2_000) }
                 async<Unit> {
                     delay(400)
-                    log("  hibás ág dob")
-                    error("szándékos hiba")
+                    log("  failing branch throws")
+                    error("deliberate failure")
                 }
             }
         } catch (e: IllegalStateException) {
-            log("coroutineScope: elkapva '${e.message}' — a 'lassú' ág is megszakadt")
+            log("coroutineScope: caught '${e.message}' — the 'slow' branch was cancelled too")
         }
     }
 
     /**
-     * `supervisorScope`: a gyerekek hibája NEM terjed felfelé és oldalra.
-     * Ezt akkor használd, ha a részeredmények önállóan is értékesek.
+     * `supervisorScope`: a child failure does not propagate up or sideways. Use it when
+     * partial results are still valuable on their own.
      */
     suspend fun independentChildren() {
         supervisorScope {
-            val ok = async { fetch("ok-ág", 300) }
+            val ok = async { fetch("surviving branch", 300) }
             val bad = async<String> {
                 delay(100)
-                error("független hiba")
+                error("independent failure")
             }
-            // Fontos: az await() itt DOBJA a hibát, ezért ágat kell kezelni.
-            runCatching { bad.await() }.onFailure { log("  hibás ág elbukott: ${it.message}") }
-            log("supervisorScope: a másik ág túlélte -> ${ok.await()}")
+            // Note: await() still throws here, so the failing branch needs its own handling.
+            runCatching { bad.await() }.onFailure { log("  failing branch lost: ${it.message}") }
+            log("supervisorScope: the other branch survived -> ${ok.await()}")
         }
     }
 
     // 4 ─────────────────────────────────────────────────────────────────────
-    /** `withTimeout` a határidő lejártakor lemondja a blokkot — TimeoutCancellationException. */
+    /** `withTimeout` cancels the block when the deadline passes — TimeoutCancellationException. */
     suspend fun timeout() {
         try {
-            withTimeout(500) { fetch("lassú hívás", 3_000) }
+            withTimeout(500) { fetch("slow call", 3_000) }
         } catch (e: CancellationException) {
-            log("withTimeout: ${e::class.simpleName} — a hívás lemondva")
+            log("withTimeout: ${e::class.simpleName} — the call was cancelled")
         }
     }
 
     // 5 ─────────────────────────────────────────────────────────────────────
     /**
-     * `withContext` átvált dispatchert, és a blokk végén visszavált.
-     * A suspend függvény felelőssége, hogy "main-safe" legyen — a hívónak nem
-     * kell tudnia, milyen szálon fut a munka.
+     * `withContext` switches dispatcher for the block and switches back at the end. Being
+     * main-safe is the suspending function's responsibility, not the caller's.
      */
     suspend fun dispatchers() {
-        log("hívó szál:  [${threadName()}]")
+        log("caller thread:       [${threadName()}]")
         withContext(dispatchers.io) { log("Dispatchers.IO:      [${threadName()}]") }
         withContext(dispatchers.default) { log("Dispatchers.Default: [${threadName()}]") }
         withContext(dispatchers.main) { log("Dispatchers.Main:    [${threadName()}]") }

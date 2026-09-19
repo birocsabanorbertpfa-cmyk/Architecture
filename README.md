@@ -13,7 +13,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 |---|---|---|---|
 | 00 | Skeleton | Gradle KTS, version catalog, Compose, wrapper | ✅ |
 | 01 | Kotlin deep dive | sealed interface, variance, value class, inline/reified, contracts, DSL | ✅ |
-| 02 | Coroutines | suspend, structured concurrency, dispatchers, cancellation | ⬜ |
+| 02 | Coroutines | suspend, structured concurrency, dispatchers, cancellation | ✅ |
 | 03 | Flow | cold vs hot, operators, StateFlow/SharedFlow, flowOn/buffer | ⬜ |
 | 04 | Retrofit + OkHttp | kotlinx.serialization, interceptors, error mapping | ⬜ |
 | 05 | Repository + domain | DTO↔domain mappers, Result wrapper, use cases | ⬜ |
@@ -34,6 +34,10 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 - `AppResult<out T>` — a sealed result type with covariance and `Failure : AppResult<Nothing>`,
   rethrowing `CancellationException` instead of swallowing it.
 - `SearchQueryBuilder` — a `@DslMarker` type-safe builder for GitHub search syntax.
+- `AppDispatchers` — dispatchers behind an interface so they can be swapped in tests.
+- `CoroutineLab` — seven runnable demos (parallelism, cooperative cancellation,
+  `NonCancellable` cleanup, `coroutineScope` vs `supervisorScope`, timeouts, dispatcher
+  switching) with a live on-device log showing thread names and timings.
 
 ## Build
 

@@ -15,7 +15,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 01 | Kotlin deep dive | sealed interface, variance, value class, inline/reified, contracts, DSL | ✅ |
 | 02 | Coroutines | suspend, structured concurrency, dispatchers, cancellation | ✅ |
 | 03 | Flow | cold vs hot, operators, StateFlow/SharedFlow, flowOn/buffer | ✅ |
-| 04 | Retrofit + OkHttp | kotlinx.serialization, interceptors, error mapping | ⬜ |
+| 04 | Retrofit + OkHttp | kotlinx.serialization, interceptors, error mapping | ✅ |
 | 05 | Repository + domain | DTO↔domain mappers, Result wrapper, use cases | ⬜ |
 | 06 | Hilt | modules, scopes, qualifiers, multibinding | ⬜ |
 | 07 | MVVM + Compose state | UiState, unidirectional data flow, side effects | ⬜ |
@@ -41,6 +41,10 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 - `FlowLab` — seven more demos covering coldness, `transform`, `flowOn`, the
   buffer/conflate/collectLatest trade-off, `combine` vs `zip`, `retryWhen` backoff and
   `shareIn`.
+- `AppError` + `safeApiCall` — every Retrofit/OkHttp/serialization failure is mapped to a
+  typed error at the edge of the data layer, so no network type reaches the UI.
+- `NetworkFactory` — a single OkHttp client and Retrofit instance, interceptors in the
+  right order, optional token from `local.properties`.
 - `FlowLabViewModel` — search-as-you-type as a single declarative chain
   (`debounce` → `distinctUntilChanged` → `flatMapLatest` → `catch` → `stateIn`), with
   one-off events on a `SharedFlow` kept separate from screen state.

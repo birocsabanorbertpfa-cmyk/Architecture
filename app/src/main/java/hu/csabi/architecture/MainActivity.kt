@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import hu.csabi.architecture.feature.lab.CoroutineLabScreen
 import hu.csabi.architecture.feature.lab.FlowLabScreen
+import hu.csabi.architecture.feature.network.NetworkLabScreen
 import hu.csabi.architecture.ui.theme.ArchitectureTheme
 
 class MainActivity : ComponentActivity() {
@@ -36,12 +37,13 @@ class MainActivity : ComponentActivity() {
 private enum class LabTab(val title: String) {
     Coroutines("02 · Coroutines"),
     Flow("03 · Flow"),
+    Network("04 · Network"),
 }
 
 @Composable
 private fun LabHost() {
     // rememberSaveable so the selected tab survives configuration changes.
-    var selected by rememberSaveable { mutableStateOf(LabTab.Flow) }
+    var selected by rememberSaveable { mutableStateOf(LabTab.Network) }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
@@ -57,6 +59,7 @@ private fun LabHost() {
             when (selected) {
                 LabTab.Coroutines -> CoroutineLabScreen()
                 LabTab.Flow -> FlowLabScreen()
+                LabTab.Network -> NetworkLabScreen()
             }
         }
     }

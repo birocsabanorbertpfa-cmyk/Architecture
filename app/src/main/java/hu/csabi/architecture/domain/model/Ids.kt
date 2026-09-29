@@ -1,4 +1,4 @@
-package hu.csabi.architecture.core.model
+package hu.csabi.architecture.domain.model
 
 import java.util.Locale
 

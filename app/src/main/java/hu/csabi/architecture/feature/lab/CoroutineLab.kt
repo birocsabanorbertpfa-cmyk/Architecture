@@ -1,6 +1,8 @@
 package hu.csabi.architecture.feature.lab
 
 import hu.csabi.architecture.core.coroutines.AppDispatchers
+import kotlin.coroutines.coroutineContext
+import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -11,8 +13,6 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import kotlin.coroutines.coroutineContext
-import kotlin.system.measureTimeMillis
 
 /**
  * Lesson 02 — runnable coroutine demos.

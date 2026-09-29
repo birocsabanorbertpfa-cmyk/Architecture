@@ -1,4 +1,4 @@
-package hu.csabi.architecture.core.model
+package hu.csabi.architecture.domain.model
 
 /**
  * Lesson 01 — type-safe builder DSL.

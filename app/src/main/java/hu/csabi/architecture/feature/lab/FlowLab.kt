@@ -1,6 +1,8 @@
 package hu.csabi.architecture.feature.lab
 
 import hu.csabi.architecture.core.coroutines.AppDispatchers
+import java.io.IOException
+import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -20,8 +22,6 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
-import java.io.IOException
-import kotlin.system.measureTimeMillis
 
 /**
  * Lesson 03 — runnable Flow demos.

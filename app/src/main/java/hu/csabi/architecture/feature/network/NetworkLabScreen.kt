@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import hu.csabi.architecture.core.model.Repo
+import hu.csabi.architecture.domain.model.Repo
 
 @Composable
 fun NetworkLabScreen(

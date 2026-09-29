@@ -1,5 +1,6 @@
 package hu.csabi.architecture.core.result
 
+import hu.csabi.architecture.core.error.AppError
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -15,10 +16,14 @@ import kotlin.contracts.contract
  * Sealed *interface* rather than class: it can take part in several hierarchies, and
  * `when` stays exhaustive — no `else` branch, and a new subtype breaks compilation
  * everywhere it needs handling.
+ *
+ * Lesson 05 narrowed `Failure` from `Throwable` to [AppError]. The payoff is immediate:
+ * `when` over the error is now exhaustive at every call site, so the `else` branches that
+ * lesson 04 needed are gone — and adding a new error case becomes a compiler-guided task.
  */
 sealed interface AppResult<out T> {
     data class Success<T>(val data: T) : AppResult<T>
-    data class Failure(val error: Throwable) : AppResult<Nothing>
+    data class Failure(val error: AppError) : AppResult<Nothing>
 }
 
 @OptIn(ExperimentalContracts::class)
@@ -29,7 +34,7 @@ fun <T> AppResult<T>.isSuccess(): Boolean {
 
 fun <T> AppResult<T>.getOrNull(): T? = (this as? AppResult.Success)?.data
 
-fun <T> AppResult<T>.errorOrNull(): Throwable? = (this as? AppResult.Failure)?.error
+fun <T> AppResult<T>.errorOrNull(): AppError? = (this as? AppResult.Failure)?.error
 
 /**
  * `inline` + lambda: the body of `transform` is copied to the call site, so there is no
@@ -48,7 +53,7 @@ inline fun <T, R> AppResult<T>.flatMap(transform: (T) -> AppResult<R>): AppResul
 }
 
 @OptIn(ExperimentalContracts::class)
-inline fun <T> AppResult<T>.onFailure(action: (Throwable) -> Unit): AppResult<T> {
+inline fun <T> AppResult<T>.onFailure(action: (AppError) -> Unit): AppResult<T> {
     contract { callsInPlace(action, InvocationKind.AT_MOST_ONCE) }
     if (this is AppResult.Failure) action(error)
     return this
@@ -58,7 +63,7 @@ inline fun <T> AppResult<T>.onFailure(action: (Throwable) -> Unit): AppResult<T>
  * `reified` keeps the type argument available at runtime, so `error is E` compiles into a
  * real `instanceof`. Without `inline` + `reified`, type erasure would make this impossible.
  */
-inline fun <reified E : Throwable, T> AppResult<T>.recover(fallback: (E) -> T): AppResult<T> =
+inline fun <reified E : AppError, T> AppResult<T>.recover(fallback: (E) -> T): AppResult<T> =
     when (this) {
         is AppResult.Success -> this
         is AppResult.Failure -> if (error is E) AppResult.Success(fallback(error)) else this
@@ -69,11 +74,14 @@ inline fun <reified E : Throwable, T> AppResult<T>.recover(fallback: (E) -> T): 
  *
  * Coroutine cancellation is implemented by throwing it; swallowing it would keep a
  * cancelled coroutine running and surface a bogus error on screen. See lesson 02.
+ *
+ * Anything that is not already an [AppError] becomes [AppError.Unknown]: the type system
+ * now guarantees that no raw framework exception can travel upwards.
  */
 inline fun <T> appRunCatching(block: () -> T): AppResult<T> = try {
     AppResult.Success(block())
 } catch (cancellation: kotlin.coroutines.cancellation.CancellationException) {
     throw cancellation
 } catch (throwable: Throwable) {
-    AppResult.Failure(throwable)
+    AppResult.Failure(throwable as? AppError ?: AppError.Unknown(throwable))
 }

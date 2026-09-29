@@ -1,9 +1,9 @@
 package hu.csabi.architecture.data.remote.dto
 
-import hu.csabi.architecture.core.model.Repo
-import hu.csabi.architecture.core.model.RepoId
-import hu.csabi.architecture.core.model.Stars
-import hu.csabi.architecture.core.model.Username
+import hu.csabi.architecture.domain.model.Repo
+import hu.csabi.architecture.domain.model.RepoId
+import hu.csabi.architecture.domain.model.Stars
+import hu.csabi.architecture.domain.model.Username
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

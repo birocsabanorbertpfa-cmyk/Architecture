@@ -1,8 +1,8 @@
 package hu.csabi.architecture.core
 
-import hu.csabi.architecture.core.model.Stars
-import hu.csabi.architecture.core.model.Username
-import hu.csabi.architecture.core.model.searchQuery
+import hu.csabi.architecture.domain.model.Stars
+import hu.csabi.architecture.domain.model.Username
+import hu.csabi.architecture.domain.model.searchQuery
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

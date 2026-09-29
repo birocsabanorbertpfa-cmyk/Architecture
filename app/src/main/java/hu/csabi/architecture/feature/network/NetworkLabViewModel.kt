@@ -3,11 +3,16 @@ package hu.csabi.architecture.feature.network
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hu.csabi.architecture.core.error.AppError
-import hu.csabi.architecture.core.model.Repo
-import hu.csabi.architecture.core.model.searchQuery
 import hu.csabi.architecture.core.result.AppResult
 import hu.csabi.architecture.core.result.map
-import hu.csabi.architecture.data.remote.GithubRemoteDataSource
+import hu.csabi.architecture.di.ServiceLocator
+import hu.csabi.architecture.domain.model.Repo
+import hu.csabi.architecture.domain.model.Username
+import hu.csabi.architecture.domain.repository.RepoRepository
+import hu.csabi.architecture.domain.usecase.SearchRepositoriesUseCase
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,9 +27,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /**
  * Lesson 04 — the lesson 03 pipeline, now talking to the real GitHub API.
@@ -35,7 +37,8 @@ import java.time.format.DateTimeFormatter
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class NetworkLabViewModel(
-    private val remote: GithubRemoteDataSource = GithubRemoteDataSource(),
+    private val searchRepositories: SearchRepositoriesUseCase = ServiceLocator.searchRepositories(),
+    private val repository: RepoRepository = ServiceLocator.repoRepository,
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
@@ -51,8 +54,8 @@ class NetworkLabViewModel(
             } else {
                 flow {
                     emit(NetworkUiState.Loading)
-                    // No try/catch: the data source returns failures as values.
-                    emit(remote.searchRepositories(searchQuery { term(text) }).toUiState())
+                    // No try/catch: the use case returns failures as values.
+                    emit(searchRepositories(text).toUiState())
                 }
             }
         }
@@ -67,11 +70,14 @@ class NetworkLabViewModel(
         viewModelScope.launch {
             _manualState.value = NetworkUiState.Loading
             val result = when (scenario) {
-                Scenario.NotFound -> remote.repoDetails("android", "this-repo-does-not-exist-42")
-                    .map { listOf(it) }
+                Scenario.NotFound ->
+                    repository.details(Username("android"), "this-repo-does-not-exist-42")
+                        .map { listOf(it) }
 
-                Scenario.Validation -> remote.searchRepositories(searchQuery { })
-                Scenario.Valid -> remote.repoDetails("square", "retrofit").map { listOf(it) }
+                // Rejected by the use case before a request is ever made.
+                Scenario.TooShort -> searchRepositories("a")
+                Scenario.Valid -> repository.details(Username("square"), "retrofit")
+                    .map { listOf(it) }
             }
             _manualState.value = result.toUiState()
         }
@@ -83,7 +89,7 @@ class NetworkLabViewModel(
     enum class Scenario(val title: String) {
         Valid("200 OK"),
         NotFound("404"),
-        Validation("422"),
+        TooShort("Invalid input"),
     }
 }
 
@@ -98,9 +104,8 @@ private fun AppResult<List<Repo>>.toUiState(): NetworkUiState = when (this) {
         NetworkUiState.Content(data)
     }
 
-    // `AppResult.Failure` still carries a plain `Throwable`, so the compiler cannot prove
-    // this `when` is exhaustive. Lesson 05 narrows it to `Failure(AppError)` and the `else`
-    // branch below disappears.
+    // Lesson 05 narrowed Failure to AppError, so this `when` is exhaustive without an
+    // `else`: adding a new error case now breaks the build here until it is handled.
     is AppResult.Failure -> when (val error = this.error) {
         is AppError.Network ->
             NetworkUiState.Failed("No connection. Check your network and try again.", retryable = true)
@@ -117,10 +122,11 @@ private fun AppResult<List<Repo>>.toUiState(): NetworkUiState = when (this) {
         is AppError.Serialization ->
             NetworkUiState.Failed("Unexpected response format", retryable = false)
 
+        is AppError.InvalidInput ->
+            NetworkUiState.Failed(error.reason, retryable = false)
+
         is AppError.Unknown ->
             NetworkUiState.Failed(error.message ?: "Unknown error", retryable = false)
-
-        else -> NetworkUiState.Failed(error.message ?: "Unknown error", retryable = false)
     }
 }
 

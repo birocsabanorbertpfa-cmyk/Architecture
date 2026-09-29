@@ -1,4 +1,4 @@
-package hu.csabi.architecture.core.model
+package hu.csabi.architecture.domain.model
 
 /**
  * Lesson 03 — the domain model the whole app will be built around.

@@ -9,9 +9,9 @@ package hu.csabi.architecture.core.error
  * the edge of the data layer instead, so upper layers `when` over a closed set of cases
  * they can actually act on.
  *
- * It extends `Exception` so it still fits `AppResult.Failure(Throwable)`. Lesson 05 narrows
- * that signature to `Failure(AppError)`, which is a one-line change precisely because the
- * mapping already happens here.
+ * It extends `Exception` so a mapped error can still be thrown where a throwable is
+ * required. Lesson 05 narrowed `AppResult.Failure` from `Throwable` to `AppError`, which
+ * was a one-line change precisely because the mapping already happened here.
  */
 sealed class AppError(
     message: String,
@@ -30,6 +30,12 @@ sealed class AppError(
     /** The response did not match the DTO: a backend change, or an HTML error page. */
     class Serialization(cause: Throwable?) : AppError("Unexpected response format", cause)
 
+    /**
+     * The request never left the app: a use case rejected the input. Lesson 05 added this
+     * case, and the compiler then pointed at every `when` that had to handle it.
+     */
+    class InvalidInput(val reason: String) : AppError(reason)
+
     /** Anything not recognised. Worth logging, never worth guessing about. */
     class Unknown(cause: Throwable?) : AppError(cause?.message ?: "Unknown error", cause)
 
@@ -38,6 +44,6 @@ sealed class AppError(
         get() = when (this) {
             is Network -> true
             is Http -> code >= 500
-            is RateLimited, is Serialization, is Unknown -> false
+            is RateLimited, is Serialization, is InvalidInput, is Unknown -> false
         }
 }

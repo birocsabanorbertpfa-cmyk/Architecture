@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hu.csabi.architecture.core.coroutines.AppDispatchers
 import hu.csabi.architecture.core.coroutines.DefaultAppDispatchers
-import hu.csabi.architecture.core.model.Repo
-import hu.csabi.architecture.core.model.searchQuery
-import hu.csabi.architecture.data.fake.FakeRepoSearch
+import hu.csabi.architecture.core.error.AppError
+import hu.csabi.architecture.core.result.AppResult
+import hu.csabi.architecture.di.ServiceLocator
+import hu.csabi.architecture.domain.model.Repo
+import hu.csabi.architecture.domain.usecase.SearchRepositoriesUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -18,7 +20,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -40,9 +41,9 @@ import kotlinx.coroutines.withContext
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class FlowLabViewModel(
     private val dispatchers: AppDispatchers = DefaultAppDispatchers,
+    private val searchRepositories: SearchRepositoriesUseCase =
+        ServiceLocator.searchRepositoriesOffline(),
 ) : ViewModel() {
-
-    private val searchApi = FakeRepoSearch(failureRate = 0.2f)
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
@@ -57,6 +58,9 @@ class FlowLabViewModel(
      * - `catch`                turns an upstream failure into a state instead of a crash
      * - `stateIn`              converts the cold chain into hot state with a current value
      *
+     * There is no `catch` any more: since lesson 05 the use case returns failures as
+     * values, so the chain has nothing left to throw.
+     *
      * `WhileSubscribed(5_000)` keeps the upstream alive for five seconds after the last
      * collector leaves, so a rotation does not restart the request — but a real departure
      * does stop it.
@@ -66,20 +70,15 @@ class FlowLabViewModel(
         .map { it.trim() }
         .distinctUntilChanged()
         .flatMapLatest { text ->
+            // The length check appears here *and* in the use case, on purpose: the UI
+            // decides when it is worth asking, the domain guarantees what is valid. Without
+            // the check here the screen would flash a spinner for every single character.
             if (text.length < MIN_QUERY_LENGTH) {
-                flowOf(SearchUiState.Idle)
+                flowOf<SearchUiState>(SearchUiState.Idle)
             } else {
                 flow {
                     emit(SearchUiState.Loading)
-                    val repos = searchApi.search(searchQuery { term(text) })
-                    emit(
-                        if (repos.isEmpty()) SearchUiState.Empty else SearchUiState.Content(repos),
-                    )
-                }.catch { cause ->
-                    // A one-off event (snackbar) and a persistent state are different things:
-                    // the event fires once, the state survives recomposition.
-                    _events.tryEmit("Search failed: ${cause.message}")
-                    emit(SearchUiState.Error(cause.message ?: "Unknown error"))
+                    emit(searchRepositories(text).toUiState())
                 }
             }
         }
@@ -158,6 +157,27 @@ class FlowLabViewModel(
 
     private companion object {
         const val MIN_QUERY_LENGTH = 2
+    }
+
+    /**
+     * Failures arrive as values now, so this is a total function over the result — no
+     * try/catch, and the compiler checks that every error case is handled.
+     */
+    private fun AppResult<List<Repo>>.toUiState(): SearchUiState = when (this) {
+        is AppResult.Success -> when {
+            data.isEmpty() -> SearchUiState.Empty
+            else -> SearchUiState.Content(data)
+        }
+
+        is AppResult.Failure -> when (val cause = error) {
+            is AppError.InvalidInput -> SearchUiState.Idle
+            else -> {
+                // A one-off event (snackbar) and persistent state are different things:
+                // the event fires once, the state survives recomposition.
+                _events.tryEmit("Search failed: ${cause.message}")
+                SearchUiState.Error(cause.message ?: "Unknown error")
+            }
+        }
     }
 }
 

@@ -2,10 +2,10 @@ package hu.csabi.architecture.data.remote
 
 import hu.csabi.architecture.core.error.AppError
 import hu.csabi.architecture.core.result.AppResult
-import kotlinx.serialization.SerializationException
-import retrofit2.HttpException
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.serialization.SerializationException
+import retrofit2.HttpException
 
 private const val HTTP_FORBIDDEN = 403
 private const val HTTP_TOO_MANY_REQUESTS = 429

@@ -20,13 +20,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import hu.csabi.architecture.domain.model.Repo
 
 @Composable
 fun NetworkLabScreen(
     modifier: Modifier = Modifier,
-    viewModel: NetworkLabViewModel = viewModel(),
+    viewModel: NetworkLabViewModel = hiltViewModel(),
 ) {
     val query by viewModel.query.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()

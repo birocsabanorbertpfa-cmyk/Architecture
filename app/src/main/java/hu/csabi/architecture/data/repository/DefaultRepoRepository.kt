@@ -1,7 +1,6 @@
 package hu.csabi.architecture.data.repository
 
 import hu.csabi.architecture.core.coroutines.AppDispatchers
-import hu.csabi.architecture.core.coroutines.DefaultAppDispatchers
 import hu.csabi.architecture.core.result.AppResult
 import hu.csabi.architecture.data.remote.RepoRemoteDataSource
 import hu.csabi.architecture.domain.model.Repo
@@ -9,6 +8,7 @@ import hu.csabi.architecture.domain.model.RepoId
 import hu.csabi.architecture.domain.model.SearchQuery
 import hu.csabi.architecture.domain.model.Username
 import hu.csabi.architecture.domain.repository.RepoRepository
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,9 +25,9 @@ import kotlinx.coroutines.withContext
  * is deliberately simple — lesson 08 replaces it with Room, and because the repository
  * interface already returns a `Flow`, that swap does not reach the ViewModel.
  */
-class DefaultRepoRepository(
+class DefaultRepoRepository @Inject constructor(
     private val remote: RepoRemoteDataSource,
-    private val dispatchers: AppDispatchers = DefaultAppDispatchers,
+    private val dispatchers: AppDispatchers,
 ) : RepoRepository {
 
     /**

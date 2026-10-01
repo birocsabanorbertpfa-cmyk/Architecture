@@ -18,12 +18,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun CoroutineLabScreen(
     modifier: Modifier = Modifier,
-    viewModel: CoroutineLabViewModel = viewModel(),
+    viewModel: CoroutineLabViewModel = hiltViewModel(),
 ) {
     val listState = rememberLazyListState()
 

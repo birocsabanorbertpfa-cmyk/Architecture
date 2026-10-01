@@ -17,7 +17,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 03 | Flow | cold vs hot, operators, StateFlow/SharedFlow, flowOn/buffer | ✅ |
 | 04 | Retrofit + OkHttp | kotlinx.serialization, interceptors, error mapping | ✅ |
 | 05 | Repository + domain | layering, dependency inversion, use cases, composition root | ✅ |
-| 06 | Hilt | modules, scopes, qualifiers, multibinding | ⬜ |
+| 06 | Hilt | modules, scopes, qualifiers, multibinding | ✅ |
 | 07 | MVVM + Compose state | UiState, unidirectional data flow, side effects | ⬜ |
 | 08 | Room | offline-first, single source of truth | ⬜ |
 | 09 | Paging 3 | RemoteMediator, Compose integration | ⬜ |
@@ -44,8 +44,9 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 - `RepoRepository` in `domain`, `DefaultRepoRepository` in `data` — dependency inversion,
   so the domain compiles without knowing Retrofit or GitHub exist.
 - `SearchRepositoriesUseCase` — validation and ranking rules in one testable place.
-- `ServiceLocator` — the composition root written by hand, to show exactly what Hilt
-  automates in lesson 06.
+- Hilt graph — `@Binds` vs `@Provides`, qualifiers for three dispatchers and for the
+  offline repository, and `@IntoSet` multibinding so interceptors contribute themselves to
+  the shared OkHttp client.
 - `AppError` + `safeApiCall` — every Retrofit/OkHttp/serialization failure is mapped to a
   typed error at the edge of the data layer, so no network type reaches the UI.
 - `NetworkFactory` — a single OkHttp client and Retrofit instance, interceptors in the
@@ -61,7 +62,7 @@ core/      shared kernel: AppResult, AppError, dispatchers, Kotlin helpers
 domain/    model, repository contracts, use cases — no Android, no network
 data/      remote (Retrofit), fake, repository implementations
 feature/   Compose screens and ViewModels
-di/        composition root
+di/        Hilt modules (the composition root)
 ```
 
 Dependencies point inwards: `feature` → `domain` ← `data`. Only `di` knows every layer.

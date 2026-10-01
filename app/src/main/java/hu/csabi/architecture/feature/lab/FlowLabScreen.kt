@@ -28,13 +28,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import hu.csabi.architecture.domain.model.Repo
 
 @Composable
 fun FlowLabScreen(
     modifier: Modifier = Modifier,
-    viewModel: FlowLabViewModel = viewModel(),
+    viewModel: FlowLabViewModel = hiltViewModel(),
 ) {
     // collectAsStateWithLifecycle stops collecting when the screen goes to the background.
     // Plain collectAsState() would keep the flow hot behind a locked screen.

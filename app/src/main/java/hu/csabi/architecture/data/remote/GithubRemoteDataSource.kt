@@ -1,13 +1,13 @@
 package hu.csabi.architecture.data.remote
 
 import hu.csabi.architecture.core.coroutines.AppDispatchers
-import hu.csabi.architecture.core.coroutines.DefaultAppDispatchers
 import hu.csabi.architecture.core.result.AppResult
 import hu.csabi.architecture.core.result.map
 import hu.csabi.architecture.data.remote.dto.toDomain
 import hu.csabi.architecture.domain.model.Repo
 import hu.csabi.architecture.domain.model.SearchQuery
 import hu.csabi.architecture.domain.model.Username
+import javax.inject.Inject
 import kotlinx.coroutines.withContext
 
 /**
@@ -16,11 +16,13 @@ import kotlinx.coroutines.withContext
  * Above this class nothing knows Retrofit exists: the signature speaks in domain types
  * ([Repo], [SearchQuery]) and [AppResult]. Lesson 05 pulled that signature out into
  * [RepoRemoteDataSource], so the caller now depends on the interface and this class is
- * simply one implementation of it.
+ * simply one implementation of it. Lesson 06 removed the default arguments: with
+ * `@Inject` on the constructor, Dagger supplies both collaborators and nobody calls this
+ * constructor by hand.
  */
-class GithubRemoteDataSource(
-    private val api: GithubApi = NetworkFactory.githubApi,
-    private val dispatchers: AppDispatchers = DefaultAppDispatchers,
+class GithubRemoteDataSource @Inject constructor(
+    private val api: GithubApi,
+    private val dispatchers: AppDispatchers,
 ) : RepoRemoteDataSource {
 
     override suspend fun searchRepositories(

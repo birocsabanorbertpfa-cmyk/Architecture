@@ -19,11 +19,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import dagger.hilt.android.AndroidEntryPoint
 import hu.csabi.architecture.feature.lab.CoroutineLabScreen
 import hu.csabi.architecture.feature.lab.FlowLabScreen
 import hu.csabi.architecture.feature.network.NetworkLabScreen
 import hu.csabi.architecture.ui.theme.ArchitectureTheme
 
+/**
+ * Lesson 06 — `@AndroidEntryPoint` creates the `ActivityComponent` and makes
+ * `hiltViewModel()` inside this Activity's composition able to reach the graph. Without it,
+ * every `hiltViewModel()` call below would fail at runtime.
+ */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()

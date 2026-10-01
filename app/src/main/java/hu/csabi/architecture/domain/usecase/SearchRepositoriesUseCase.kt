@@ -7,6 +7,7 @@ import hu.csabi.architecture.domain.model.Repo
 import hu.csabi.architecture.domain.model.SearchQuery
 import hu.csabi.architecture.domain.model.searchQuery
 import hu.csabi.architecture.domain.repository.RepoRepository
+import javax.inject.Inject
 
 /**
  * Lesson 05 — a use case is one business operation, expressed once.
@@ -19,7 +20,7 @@ import hu.csabi.architecture.domain.repository.RepoRepository
  * `operator fun invoke` lets callers write `searchRepositories(text)`, which reads like the
  * action it performs rather than like an object with a method.
  */
-class SearchRepositoriesUseCase(
+class SearchRepositoriesUseCase @Inject constructor(
     private val repository: RepoRepository,
 ) {
 

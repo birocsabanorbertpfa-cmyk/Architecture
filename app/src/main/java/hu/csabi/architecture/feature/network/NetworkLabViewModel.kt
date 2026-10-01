@@ -2,15 +2,16 @@ package hu.csabi.architecture.feature.network
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import hu.csabi.architecture.core.error.AppError
 import hu.csabi.architecture.core.result.AppResult
 import hu.csabi.architecture.core.result.map
-import hu.csabi.architecture.di.ServiceLocator
 import hu.csabi.architecture.domain.model.Repo
 import hu.csabi.architecture.domain.model.Username
 import hu.csabi.architecture.domain.repository.RepoRepository
 import hu.csabi.architecture.domain.usecase.SearchRepositoriesUseCase
 import java.time.Instant
+import javax.inject.Inject
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,9 +37,10 @@ import kotlinx.coroutines.launch
  * signature returning domain types.
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-class NetworkLabViewModel(
-    private val searchRepositories: SearchRepositoriesUseCase = ServiceLocator.searchRepositories(),
-    private val repository: RepoRepository = ServiceLocator.repoRepository,
+@HiltViewModel
+class NetworkLabViewModel @Inject constructor(
+    private val searchRepositories: SearchRepositoriesUseCase,
+    private val repository: RepoRepository,
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")

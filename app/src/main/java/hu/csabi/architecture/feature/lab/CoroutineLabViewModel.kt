@@ -6,8 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import hu.csabi.architecture.core.coroutines.AppDispatchers
-import hu.csabi.architecture.core.coroutines.DefaultAppDispatchers
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -22,9 +23,13 @@ import kotlinx.coroutines.withContext
  *
  * State handling here is deliberately primitive — StateFlow arrives in lesson 03, a proper
  * UiState in lesson 07.
+ *
+ * Lesson 06: `@HiltViewModel` lets Hilt build this through the `ViewModelProvider.Factory`,
+ * so the constructor can take real dependencies instead of default arguments.
  */
-class CoroutineLabViewModel(
-    private val dispatchers: AppDispatchers = DefaultAppDispatchers,
+@HiltViewModel
+class CoroutineLabViewModel @Inject constructor(
+    private val dispatchers: AppDispatchers,
 ) : ViewModel() {
 
     val logLines = mutableStateListOf<String>()

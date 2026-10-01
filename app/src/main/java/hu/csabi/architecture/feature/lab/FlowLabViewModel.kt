@@ -2,11 +2,12 @@ package hu.csabi.architecture.feature.lab
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import hu.csabi.architecture.core.coroutines.AppDispatchers
-import hu.csabi.architecture.core.coroutines.DefaultAppDispatchers
+import javax.inject.Inject
 import hu.csabi.architecture.core.error.AppError
 import hu.csabi.architecture.core.result.AppResult
-import hu.csabi.architecture.di.ServiceLocator
+import hu.csabi.architecture.di.OfflineRepos
 import hu.csabi.architecture.domain.model.Repo
 import hu.csabi.architecture.domain.usecase.SearchRepositoriesUseCase
 import kotlinx.coroutines.CancellationException
@@ -39,10 +40,12 @@ import kotlinx.coroutines.withContext
  *  - the demo runner below keeps the imperative style from lesson 02, for comparison.
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-class FlowLabViewModel(
-    private val dispatchers: AppDispatchers = DefaultAppDispatchers,
-    private val searchRepositories: SearchRepositoriesUseCase =
-        ServiceLocator.searchRepositoriesOffline(),
+@HiltViewModel
+class FlowLabViewModel @Inject constructor(
+    private val dispatchers: AppDispatchers,
+    // The qualifier picks the fake-backed graph, so this screen never spends the GitHub
+    // rate limit and keeps working with no connection.
+    @param:OfflineRepos private val searchRepositories: SearchRepositoriesUseCase,
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")

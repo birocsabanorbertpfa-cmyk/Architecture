@@ -18,7 +18,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 04 | Retrofit + OkHttp | kotlinx.serialization, interceptors, error mapping | ✅ |
 | 05 | Repository + domain | layering, dependency inversion, use cases, composition root | ✅ |
 | 06 | Hilt | modules, scopes, qualifiers, multibinding | ✅ |
-| 07 | MVVM + Compose state | UiState, unidirectional data flow, side effects | ⬜ |
+| 07 | MVVM + Compose state | UiState, unidirectional data flow, reducer, side effects | ✅ |
 | 08 | Room | offline-first, single source of truth | ⬜ |
 | 09 | Paging 3 | RemoteMediator, Compose integration | ⬜ |
 | 10 | Unit testing | MockK, Turbine, runTest/TestDispatcher, fakes | ⬜ |
@@ -44,6 +44,11 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 - `RepoRepository` in `domain`, `DefaultRepoRepository` in `data` — dependency inversion,
   so the domain compiles without knowing Retrofit or GitHub exist.
 - `SearchRepositoriesUseCase` — validation and ranking rules in one testable place.
+- `feature/search` — the UDF contract written down (state down, events up, effects
+  sideways once), state produced by a `scan` reducer, `SavedStateHandle` for process death,
+  effects on a `Channel`, and a stateless screen with five previews.
+- `UiText` — the ViewModel describes text, the composable resolves it; no `Context` above
+  the UI layer.
 - Hilt graph — `@Binds` vs `@Provides`, qualifiers for three dispatchers and for the
   offline repository, and `@IntoSet` multibinding so interceptors contribute themselves to
   the shared OkHttp client.

@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">Architecture</string>
+
+    <!-- Lesson 07: error text lives in resources, so the ViewModel never needs a Context -->
+    <string name="error_network">No connection. Check your network and try again.</string>
+    <string name="error_rate_limited">GitHub rate limit reached. Add a token to local.properties.</string>
+    <string name="error_rate_limited_until">GitHub rate limit reached, resets at %1$s.</string>
+    <string name="error_not_found">Not found.</string>
+    <string name="error_server">GitHub is having trouble (HTTP %1$d).</string>
+    <string name="error_response_format">Unexpected response format.</string>
+    <string name="error_unknown">Something went wrong.</string>
+
+    <string name="search_hint">Search repositories on GitHub</string>
+    <string name="search_prompt">Type at least two characters to search.</string>
+    <string name="search_empty">No repository matched “%1$s”.</string>
+    <string name="search_retry">Retry</string>
+    <string name="search_dismiss">Dismiss</string>
+    <string name="search_opened">Opened %1$s</string>
+    <string name="search_result_count">%1$d results</string>
 </resources>

@@ -11,82 +11,52 @@ import hu.csabi.architecture.domain.model.Username
 import hu.csabi.architecture.domain.repository.RepoRepository
 import hu.csabi.architecture.domain.usecase.SearchRepositoriesUseCase
 import java.time.Instant
-import javax.inject.Inject
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * Lesson 04 — the lesson 03 pipeline, now talking to the real GitHub API.
+ * Lesson 04 — a bench for the error mapping.
  *
- * The chain is unchanged; only the data source behind `flatMapLatest` is different. That is
- * the payoff of keeping the fake and the real implementation behind the same suspend
- * signature returning domain types.
+ * Lesson 07 moved search-as-you-type into its own feature screen, so what is left here is
+ * the part this lab was actually for: firing specific failures on demand and seeing which
+ * [AppError] each one becomes.
+ *
+ * Note that it still builds its UI state as a `sealed interface`. That is the right shape
+ * *here*, because these states genuinely exclude each other — unlike a real screen, which
+ * needs "content plus error" and therefore gets a data class (see `RepoSearchUiState`).
  */
-@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class NetworkLabViewModel @Inject constructor(
     private val searchRepositories: SearchRepositoriesUseCase,
     private val repository: RepoRepository,
 ) : ViewModel() {
 
-    private val _query = MutableStateFlow("")
-    val query: StateFlow<String> = _query.asStateFlow()
-
-    val state: StateFlow<NetworkUiState> = _query
-        .debounce(400)
-        .map { it.trim() }
-        .distinctUntilChanged()
-        .flatMapLatest { text ->
-            if (text.length < 2) {
-                flowOf<NetworkUiState>(NetworkUiState.Idle)
-            } else {
-                flow {
-                    emit(NetworkUiState.Loading)
-                    // No try/catch: the use case returns failures as values.
-                    emit(searchRepositories(text).toUiState())
-                }
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NetworkUiState.Idle)
-
-    fun onQueryChange(value: String) {
-        _query.value = value
-    }
+    private val _state = MutableStateFlow<NetworkUiState>(NetworkUiState.Idle)
+    val state: StateFlow<NetworkUiState> = _state.asStateFlow()
 
     /** Deliberate failures, so every branch of the error mapping can be seen working. */
     fun trigger(scenario: Scenario) {
         viewModelScope.launch {
-            _manualState.value = NetworkUiState.Loading
+            _state.value = NetworkUiState.Loading
             val result = when (scenario) {
+                Scenario.Valid -> repository.details(Username("square"), "retrofit")
+                    .map { listOf(it) }
+
                 Scenario.NotFound ->
                     repository.details(Username("android"), "this-repo-does-not-exist-42")
                         .map { listOf(it) }
 
                 // Rejected by the use case before a request is ever made.
                 Scenario.TooShort -> searchRepositories("a")
-                Scenario.Valid -> repository.details(Username("square"), "retrofit")
-                    .map { listOf(it) }
             }
-            _manualState.value = result.toUiState()
+            _state.value = result.toUiState()
         }
     }
-
-    private val _manualState = MutableStateFlow<NetworkUiState>(NetworkUiState.Idle)
-    val manualState: StateFlow<NetworkUiState> = _manualState.asStateFlow()
 
     enum class Scenario(val title: String) {
         Valid("200 OK"),
@@ -98,6 +68,9 @@ class NetworkLabViewModel @Inject constructor(
 /**
  * Turning the typed error into something a human can act on. Note how each branch says
  * something different — this is the reason the error hierarchy exists at all.
+ *
+ * Lesson 05 narrowed Failure to AppError, so this `when` is exhaustive without an `else`:
+ * adding a new error case breaks the build here until it is handled.
  */
 private fun AppResult<List<Repo>>.toUiState(): NetworkUiState = when (this) {
     is AppResult.Success -> if (data.isEmpty()) {
@@ -106,14 +79,14 @@ private fun AppResult<List<Repo>>.toUiState(): NetworkUiState = when (this) {
         NetworkUiState.Content(data)
     }
 
-    // Lesson 05 narrowed Failure to AppError, so this `when` is exhaustive without an
-    // `else`: adding a new error case now breaks the build here until it is handled.
     is AppResult.Failure -> when (val error = this.error) {
         is AppError.Network ->
             NetworkUiState.Failed("No connection. Check your network and try again.", retryable = true)
 
-        is AppError.RateLimited ->
-            NetworkUiState.Failed("Rate limit reached${error.resetAtEpochSeconds.asResetHint()}", retryable = false)
+        is AppError.RateLimited -> NetworkUiState.Failed(
+            "Rate limit reached${error.resetAtEpochSeconds.asResetHint()}",
+            retryable = false,
+        )
 
         is AppError.Http -> when (error.code) {
             404 -> NetworkUiState.Failed("Not found (404)", retryable = false)

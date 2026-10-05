@@ -40,10 +40,15 @@ import kotlinx.coroutines.launch
  * The public surface is [onEvent], [uiState] and [effects]. Nothing else, so a screen has no
  * way to put the ViewModel into an inconsistent state.
  *
- * The state is produced by a **reducer**: every input — a keystroke, a search outcome, a
- * dismissal — is turned into a [Change], and `scan` folds those changes over the previous
- * state. That is what makes "keep the old list while refreshing" or "show a list and an
- * error banner" expressible without a tangle of nullable fields being set from three places.
+ * The state is produced by a **reducer**: every input — a keystroke, a list from storage, a
+ * refresh outcome, a dismissal — is turned into a [Change], and `scan` folds those changes
+ * over the previous state. That is what makes "keep the old list while refreshing" or "show a
+ * list and an error banner" expressible without a tangle of nullable fields set from three
+ * places.
+ *
+ * Lesson 08 separated the two sources, and that separation is the offline-first payoff: the
+ * **list always comes from the database**, while the network only reports whether a refresh
+ * worked. Open the app on a plane and the previous results are still there.
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -65,17 +70,24 @@ class RepoSearchViewModel @Inject constructor(
 
     private val dismissals = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
-    private val searchOutcome: Flow<Outcome> = combine(
-        query.debounce(DEBOUNCE_MILLIS).map { it.trim() }.distinctUntilChanged(),
-        retryTrigger,
-    ) { text, _ -> text }
+    private val debouncedQuery: Flow<String> =
+        query.debounce(DEBOUNCE_MILLIS).map { it.trim() }.distinctUntilChanged()
+
+    /** The data: a stream out of Room. It cannot fail, so it carries no error case. */
+    private val storedRepos: Flow<List<Repo>> = debouncedQuery
+        .flatMapLatest { text -> searchRepositories.observe(text) }
+
+    /** The network: reports only how the refresh went. The rows arrive via [storedRepos]. */
+    private val refreshOutcome: Flow<Outcome> = combine(debouncedQuery, retryTrigger) { t, _ -> t }
         .flatMapLatest { text ->
             if (text.length < RepoSearchUiState.MIN_QUERY_LENGTH) {
                 flow { emit(Outcome.Idle) }
             } else {
                 flow {
                     emit(Outcome.Loading)
-                    emit(searchRepositories(text).toOutcome())
+                    // `force` on a manual retry: the user asking again outranks the
+                    // freshness check that would otherwise skip the network entirely.
+                    emit(searchRepositories.refresh(text, force = retryTrigger.value > 0).toOutcome())
                 }
             }
         }
@@ -90,7 +102,8 @@ class RepoSearchViewModel @Inject constructor(
      */
     val uiState: StateFlow<RepoSearchUiState> = merge(
         query.map { Change.Query(it) },
-        searchOutcome.map { Change.Search(it) },
+        storedRepos.map { Change.Results(it) },
+        refreshOutcome.map { Change.Refresh(it) },
         dismissals.map { Change.ClearError },
     )
         .scan(RepoSearchUiState()) { state, change -> state.reduce(change) }
@@ -135,18 +148,21 @@ class RepoSearchViewModel @Inject constructor(
         is Change.Query -> copy(query = change.value)
         Change.ClearError -> copy(error = null)
 
-        is Change.Search -> when (val outcome = change.outcome) {
-            Outcome.Idle -> copy(repos = emptyList(), isLoading = false, error = null)
-            // `repos` is deliberately untouched: the old list stays on screen while the new
-            // request is in flight.
+        // The only change that ever touches `repos`. Storage is the single source of truth,
+        // so no network response can set the list directly.
+        is Change.Results -> copy(repos = change.repos)
+
+        is Change.Refresh -> when (val outcome = change.outcome) {
+            Outcome.Idle -> copy(isLoading = false, error = null)
             Outcome.Loading -> copy(isLoading = true, error = null)
-            is Outcome.Success -> copy(repos = outcome.repos, isLoading = false, error = null)
+            Outcome.Done -> copy(isLoading = false, error = null)
+            // A failed refresh shows an error *over* whatever storage is still serving.
             is Outcome.Failure -> copy(isLoading = false, error = outcome.message)
         }
     }
 
-    private fun AppResult<List<Repo>>.toOutcome(): Outcome = when (this) {
-        is AppResult.Success -> Outcome.Success(data)
+    private fun AppResult<Unit>.toOutcome(): Outcome = when (this) {
+        is AppResult.Success -> Outcome.Done
         is AppResult.Failure -> when (val cause = error) {
             // The use case rejects a too-short query; that is not worth shouting about.
             is AppError.InvalidInput -> Outcome.Idle
@@ -178,14 +194,15 @@ class RepoSearchViewModel @Inject constructor(
     /** Inputs to the reducer. Internal: how the state is built is nobody else's business. */
     private sealed interface Change {
         data class Query(val value: String) : Change
-        data class Search(val outcome: Outcome) : Change
+        data class Results(val repos: List<Repo>) : Change
+        data class Refresh(val outcome: Outcome) : Change
         data object ClearError : Change
     }
 
     private sealed interface Outcome {
         data object Idle : Outcome
         data object Loading : Outcome
-        data class Success(val repos: List<Repo>) : Outcome
+        data object Done : Outcome
         data class Failure(val message: UiText) : Outcome
     }
 

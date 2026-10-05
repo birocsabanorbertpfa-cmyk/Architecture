@@ -9,27 +9,42 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Lesson 05 — the contract lives in the domain, the implementation lives in data.
  *
- * This is dependency inversion, and it is the reason the arrow points the way it does:
- * `data` depends on `domain`, never the other way round. The domain layer can be compiled,
- * read and tested without knowing that Retrofit, Room or GitHub exist.
+ * This is dependency inversion: `data` depends on `domain`, never the other way round. The
+ * domain layer can be compiled, read and tested without knowing that Retrofit, Room or
+ * GitHub exist. Notice what the signatures do not mention — no DTO, no entity, no HTTP
+ * status, no threading.
  *
- * Notice what the signatures do *not* mention: no DTO, no HTTP status, no `Response<T>`,
- * no threading. Only domain types and [AppResult].
+ * Lesson 08 split reading from refreshing, which is the shape **single source of truth**
+ * demands: [observeSearch] always answers from local storage, and [refresh] is the only
+ * thing that talks to the network — it writes what it fetched and then says nothing more.
+ * The UI therefore renders exactly one thing, the database, whether the data arrived a
+ * second ago or last week.
  */
 interface RepoRepository {
 
-    /** One-shot search. Failures arrive as values, never as thrown exceptions. */
+    /**
+     * The stream the UI renders. It never fails: a network problem is [refresh]'s business,
+     * and whatever was stored earlier stays visible regardless.
+     */
+    fun observeSearch(query: SearchQuery): Flow<List<Repo>>
+
+    /**
+     * Fetch and store. Returns whether the *fetch* succeeded — not the data, because the
+     * data is already flowing through [observeSearch].
+     *
+     * @param force skips the freshness check and always hits the network, for pull-to-refresh.
+     */
+    suspend fun refresh(query: SearchQuery, force: Boolean = false): AppResult<Unit>
+
+    /**
+     * One-shot convenience for callers that are not observing. Still reads its result from
+     * storage after refreshing, so it cannot disagree with [observeSearch].
+     */
     suspend fun search(query: SearchQuery, page: Int = 1): AppResult<List<Repo>>
 
     suspend fun details(owner: Username, name: String): AppResult<Repo>
 
-    /**
-     * Everything the repository has seen so far, as a stream.
-     *
-     * Returning a `Flow` instead of a `List` is what makes the repository a *single source
-     * of truth*: callers observe it and are pushed updates, rather than asking again after
-     * every write. Lesson 08 swaps the backing store for Room without changing this line.
-     */
+    /** Everything stored, newest-starred first. */
     fun observeCached(): Flow<List<Repo>>
 
     suspend fun clearCache()

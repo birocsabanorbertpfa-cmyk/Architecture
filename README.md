@@ -19,7 +19,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 05 | Repository + domain | layering, dependency inversion, use cases, composition root | ✅ |
 | 06 | Hilt | modules, scopes, qualifiers, multibinding | ✅ |
 | 07 | MVVM + Compose state | UiState, unidirectional data flow, reducer, side effects | ✅ |
-| 08 | Room | offline-first, single source of truth | ⬜ |
+| 08 | Room | offline-first, single source of truth, migrations | ✅ |
 | 09 | Paging 3 | RemoteMediator, Compose integration | ⬜ |
 | 10 | Unit testing | MockK, Turbine, runTest/TestDispatcher, fakes | ⬜ |
 | 11 | UI testing | Compose test, Hilt test modules, robot pattern | ⬜ |
@@ -44,6 +44,11 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 - `RepoRepository` in `domain`, `DefaultRepoRepository` in `data` — dependency inversion,
   so the domain compiles without knowing Retrofit or GitHub exist.
 - `SearchRepositoriesUseCase` — validation and ranking rules in one testable place.
+- Room as the **single source of truth**: the network only writes, the UI only reads
+  storage, so the screen works offline and two observers can never disagree. Freshness is a
+  `fetched_at` column, not a guess.
+- Two committed schema versions and a real `Migration` between them, with a
+  `MigrationTestHelper` test that validates the result against the exported JSON.
 - `feature/search` — the UDF contract written down (state down, events up, effects
   sideways once), state produced by a `scan` reducer, `SavedStateHandle` for process death,
   effects on a `Channel`, and a stateless screen with five previews.
@@ -65,7 +70,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 ```
 core/      shared kernel: AppResult, AppError, dispatchers, Kotlin helpers
 domain/    model, repository contracts, use cases — no Android, no network
-data/      remote (Retrofit), fake, repository implementations
+data/      remote (Retrofit), local (Room), fake, repository implementations
 feature/   Compose screens and ViewModels
 di/        Hilt modules (the composition root)
 ```
@@ -77,6 +82,12 @@ Dependencies point inwards: `feature` → `domain` ← `data`. Only `di` knows e
 ```
 ./gradlew :app:assembleDebug
 ./gradlew :app:testDebugUnitTest
+```
+
+The instrumented tests (including the Room migration test) need a device or emulator:
+
+```
+./gradlew :app:connectedDebugAndroidTest
 ```
 
 Requires JDK 17 (`JAVA_HOME`) and Android SDK 36. `local.properties` is not versioned.

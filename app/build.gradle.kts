@@ -59,7 +59,22 @@ android {
     }
 }
 
+/**
+ * Lesson 08 — the exported schema is a versioned artifact, committed to git.
+ *
+ * Every `@Database(version = n)` writes a JSON description of the tables here. Room's
+ * migration tests read those files to verify that a migration really produces the schema the
+ * next version expects, and a code review can see exactly what changed on disk.
+ */
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.generateKotlin", "true")
+}
+
 dependencies {
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
@@ -85,6 +100,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

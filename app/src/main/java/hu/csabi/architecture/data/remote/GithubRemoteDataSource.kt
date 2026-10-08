@@ -4,7 +4,9 @@ import hu.csabi.architecture.core.coroutines.AppDispatchers
 import hu.csabi.architecture.core.result.AppResult
 import hu.csabi.architecture.core.result.map
 import hu.csabi.architecture.data.remote.dto.toDomain
+import hu.csabi.architecture.data.remote.dto.toDomainPage
 import hu.csabi.architecture.domain.model.Repo
+import hu.csabi.architecture.domain.model.RepoPage
 import hu.csabi.architecture.domain.model.SearchQuery
 import hu.csabi.architecture.domain.model.Username
 import javax.inject.Inject
@@ -35,6 +37,15 @@ class GithubRemoteDataSource @Inject constructor(
             safeApiCall { api.searchRepositories(query = query.raw, page = page) }
                 .map { response -> response.toDomain() }
         }
+
+    override suspend fun searchRepositoriesPage(
+        query: SearchQuery,
+        page: Int,
+        perPage: Int,
+    ): AppResult<RepoPage> = withContext(dispatchers.io) {
+        safeApiCall { api.searchRepositories(query = query.raw, perPage = perPage, page = page) }
+            .map { response -> response.toDomainPage() }
+    }
 
     override suspend fun repoDetails(owner: Username, name: String): AppResult<Repo> =
         withContext(dispatchers.io) {

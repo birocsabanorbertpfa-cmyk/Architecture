@@ -1,5 +1,6 @@
 package hu.csabi.architecture.domain.usecase
 
+import androidx.paging.PagingData
 import hu.csabi.architecture.core.error.AppError
 import hu.csabi.architecture.core.result.AppResult
 import hu.csabi.architecture.core.result.map
@@ -35,6 +36,21 @@ class SearchRepositoriesUseCase @Inject constructor(
 
         return repository.observeSearch(buildQuery(text, language))
             .map { repos -> repos.rank(text) }
+    }
+
+    /**
+     * Lesson 09 — the paged stream.
+     *
+     * Note what is *missing*: the ranking rule. Paging hands over one page at a time, and
+     * sorting a page in memory would reorder items within the page while leaving the pages
+     * themselves in server order — worse than not sorting at all. Ordering for a paged list
+     * belongs in the query (`ORDER BY` in the DAO, `sort=stars` on the API), which is a real
+     * constraint paging imposes on a design, not an oversight.
+     */
+    fun paged(rawQuery: String, language: String? = null): Flow<PagingData<Repo>> {
+        val text = rawQuery.trim()
+        if (text.length < MIN_QUERY_LENGTH) return flowOf(PagingData.empty())
+        return repository.pagedSearch(buildQuery(text, language))
     }
 
     /** Fetch and store. Returns whether the fetch worked; the data arrives via [observe]. */

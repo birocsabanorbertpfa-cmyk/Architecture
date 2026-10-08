@@ -1,9 +1,17 @@
 package hu.csabi.architecture.data.repository
 
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import hu.csabi.architecture.core.coroutines.AppDispatchers
 import hu.csabi.architecture.core.result.AppResult
 import hu.csabi.architecture.core.result.map
+import hu.csabi.architecture.data.local.ArchitectureDatabase
 import hu.csabi.architecture.data.local.RepoDao
+import hu.csabi.architecture.data.local.localNeedle
+import hu.csabi.architecture.data.paging.RepoRemoteMediator
 import hu.csabi.architecture.data.local.toDomain
 import hu.csabi.architecture.data.local.toEntity
 import hu.csabi.architecture.data.remote.RepoRemoteDataSource
@@ -37,11 +45,12 @@ import kotlinx.coroutines.withContext
 class DefaultRepoRepository @Inject constructor(
     private val remote: RepoRemoteDataSource,
     private val dao: RepoDao,
+    private val database: ArchitectureDatabase,
     private val dispatchers: AppDispatchers,
 ) : RepoRepository {
 
     override fun observeSearch(query: SearchQuery): Flow<List<Repo>> =
-        dao.observeMatching(query.needle()).map { rows -> rows.map { it.toDomain() } }
+        dao.observeMatching(query.localNeedle()).map { rows -> rows.map { it.toDomain() } }
 
     override fun observeCached(): Flow<List<Repo>> =
         dao.observeAll().map { rows -> rows.map { it.toDomain() } }
@@ -67,8 +76,33 @@ class DefaultRepoRepository @Inject constructor(
 
     override suspend fun search(query: SearchQuery, page: Int): AppResult<List<Repo>> =
         withContext(dispatchers.io) {
-            refresh(query).map { dao.observeMatching(query.needle()).first().map { it.toDomain() } }
+            refresh(query).map { dao.observeMatching(query.localNeedle()).first().map { it.toDomain() } }
         }
+
+    /**
+     * Lesson 09 — assembling the pager.
+     *
+     * Two details that bite people:
+     *  - `initialLoadSize` defaults to **three times** `pageSize`, which quietly breaks a
+     *    mediator whose page arithmetic assumes equal pages. Setting them equal keeps
+     *    "page N contains items N*size..." true.
+     *  - `enablePlaceholders = false` because the DAO does not report a total count to
+     *    Paging; with placeholders on, the list would show null items it can never fill.
+     *
+     * `PagingData.map` converts entities to domain models **per loaded page**, so nothing
+     * maps a list it has not displayed.
+     */
+    @OptIn(ExperimentalPagingApi::class)
+    override fun pagedSearch(query: SearchQuery): Flow<PagingData<Repo>> = Pager(
+        config = PagingConfig(
+            pageSize = RepoRemoteMediator.PAGE_SIZE,
+            initialLoadSize = RepoRemoteMediator.PAGE_SIZE,
+            prefetchDistance = PREFETCH_DISTANCE,
+            enablePlaceholders = false,
+        ),
+        remoteMediator = RepoRemoteMediator(query, remote, database),
+        pagingSourceFactory = { dao.pagingSource(query.localNeedle()) },
+    ).flow.map { page -> page.map { it.toDomain() } }
 
     override suspend fun details(owner: Username, name: String): AppResult<Repo> =
         withContext(dispatchers.io) {
@@ -85,7 +119,7 @@ class DefaultRepoRepository @Inject constructor(
     override suspend fun clearCache() = withContext(dispatchers.io) { dao.clear() }
 
     private suspend fun isFresh(query: SearchQuery): Boolean {
-        val newest = dao.newestFetchedAt(query.needle()) ?: return false
+        val newest = dao.newestFetchedAt(query.localNeedle()) ?: return false
         return System.currentTimeMillis() - newest < CACHE_TTL.inWholeMilliseconds
     }
 
@@ -94,9 +128,8 @@ class DefaultRepoRepository @Inject constructor(
      * knows nothing about, so local matching uses the free-text term only. Deciding this
      * here, in the data layer, is correct: it is a storage detail, not a business rule.
      */
-    private fun SearchQuery.needle(): String = raw.substringBefore(' ')
-
     private companion object {
+        const val PREFETCH_DISTANCE = 5
         val CACHE_TTL = 5.minutes
         val EVICT_AFTER = 7.days
     }

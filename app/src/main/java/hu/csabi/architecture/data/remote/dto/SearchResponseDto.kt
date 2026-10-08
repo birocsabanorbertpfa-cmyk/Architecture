@@ -2,6 +2,7 @@ package hu.csabi.architecture.data.remote.dto
 
 import hu.csabi.architecture.domain.model.Repo
 import hu.csabi.architecture.domain.model.RepoId
+import hu.csabi.architecture.domain.model.RepoPage
 import hu.csabi.architecture.domain.model.Stars
 import hu.csabi.architecture.domain.model.Username
 import kotlinx.serialization.SerialName
@@ -64,3 +65,12 @@ fun RepoDto.toDomain(): Repo = Repo(
 fun SearchResponseDto.toDomain(): List<Repo> = items.mapNotNull { dto ->
     runCatching { dto.toDomain() }.getOrNull()
 }
+
+/**
+ * Lesson 09 — the same rows plus the envelope's total, which paging needs to know when to
+ * stop asking for more.
+ */
+fun SearchResponseDto.toDomainPage(): RepoPage = RepoPage(
+    repos = toDomain(),
+    totalCount = totalCount,
+)

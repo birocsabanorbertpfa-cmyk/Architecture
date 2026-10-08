@@ -1,6 +1,7 @@
 package hu.csabi.architecture.domain.repository
 
 import hu.csabi.architecture.core.result.AppResult
+import androidx.paging.PagingData
 import hu.csabi.architecture.domain.model.Repo
 import hu.csabi.architecture.domain.model.SearchQuery
 import hu.csabi.architecture.domain.model.Username
@@ -41,6 +42,16 @@ interface RepoRepository {
      * storage after refreshing, so it cannot disagree with [observeSearch].
      */
     suspend fun search(query: SearchQuery, page: Int = 1): AppResult<List<Repo>>
+
+    /**
+     * Lesson 09 — the paged stream.
+     *
+     * `PagingData` is an androidx type in a domain interface, which is a compromise worth
+     * naming: wrapping it in a hand-rolled abstraction would mean reimplementing paging's
+     * diffing and load states for no benefit. The rest of the layer stays clean, and this
+     * one leak is documented rather than hidden.
+     */
+    fun pagedSearch(query: SearchQuery): Flow<PagingData<Repo>>
 
     suspend fun details(owner: Username, name: String): AppResult<Repo>
 

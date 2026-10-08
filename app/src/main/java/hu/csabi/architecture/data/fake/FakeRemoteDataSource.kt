@@ -5,6 +5,7 @@ import hu.csabi.architecture.core.result.AppResult
 import hu.csabi.architecture.data.remote.RepoRemoteDataSource
 import hu.csabi.architecture.domain.model.Repo
 import hu.csabi.architecture.domain.model.RepoId
+import hu.csabi.architecture.domain.model.RepoPage
 import hu.csabi.architecture.domain.model.SearchQuery
 import hu.csabi.architecture.domain.model.Stars
 import hu.csabi.architecture.domain.model.Username
@@ -43,6 +44,23 @@ class FakeRemoteDataSource(
                 repo.language?.lowercase()?.contains(needle) == true
         }
         return AppResult.Success(matches)
+    }
+
+    /**
+     * Lesson 09 — the fake has to page too, otherwise it stops being a faithful stand-in.
+     * Slicing the catalogue is enough to exercise the mediator's end-of-pagination logic.
+     */
+    override suspend fun searchRepositoriesPage(
+        query: SearchQuery,
+        page: Int,
+        perPage: Int,
+    ): AppResult<RepoPage> = when (val all = searchRepositories(query, page)) {
+        is AppResult.Failure -> all
+        is AppResult.Success -> {
+            val from = (page - 1) * perPage
+            val slice = all.data.drop(from).take(perPage)
+            AppResult.Success(RepoPage(repos = slice, totalCount = all.data.size))
+        }
     }
 
     override suspend fun repoDetails(owner: Username, name: String): AppResult<Repo> {

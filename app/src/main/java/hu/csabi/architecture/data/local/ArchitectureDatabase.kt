@@ -14,13 +14,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * migration really produces the schema the next version expects.
  */
 @Database(
-    entities = [RepoEntity::class],
-    version = 2,
+    entities = [RepoEntity::class, RemoteKeyEntity::class],
+    version = 3,
     exportSchema = true,
 )
 abstract class ArchitectureDatabase : RoomDatabase() {
 
     abstract fun repoDao(): RepoDao
+
+    abstract fun remoteKeyDao(): RemoteKeyDao
 
     companion object {
         const val NAME = "architecture.db"
@@ -48,6 +50,28 @@ abstract class ArchitectureDatabase : RoomDatabase() {
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_repos_language ON repos (language)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_repos_stars ON repos (stars)")
+            }
+        }
+
+        /**
+         * Lesson 09 added the `remote_keys` table. A migration that creates a table has to
+         * reproduce Room's own `CREATE TABLE` exactly — column order, types, nullability and
+         * the primary key — or `runMigrationsAndValidate` fails. Copying it out of the
+         * generated `3.json` is the reliable way to get it right.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `remote_keys` (
+                        `query_key` TEXT NOT NULL,
+                        `next_page` INTEGER,
+                        `total_count` INTEGER NOT NULL,
+                        `updated_at` INTEGER NOT NULL,
+                        PRIMARY KEY(`query_key`)
+                    )
+                    """.trimIndent(),
+                )
             }
         }
     }

@@ -2,6 +2,7 @@ package hu.csabi.architecture.data.remote
 
 import hu.csabi.architecture.core.result.AppResult
 import hu.csabi.architecture.domain.model.Repo
+import hu.csabi.architecture.domain.model.RepoPage
 import hu.csabi.architecture.domain.model.SearchQuery
 import hu.csabi.architecture.domain.model.Username
 
@@ -16,6 +17,17 @@ import hu.csabi.architecture.domain.model.Username
 interface RepoRemoteDataSource {
 
     suspend fun searchRepositories(query: SearchQuery, page: Int = 1): AppResult<List<Repo>>
+
+    /**
+     * Lesson 09 — the paged read, which also reports the total so the mediator can decide
+     * when pagination has reached the end. Both implementations had to follow; that is the
+     * cost of widening a port, and the reason to keep ports narrow.
+     */
+    suspend fun searchRepositoriesPage(
+        query: SearchQuery,
+        page: Int,
+        perPage: Int,
+    ): AppResult<RepoPage>
 
     suspend fun repoDetails(owner: Username, name: String): AppResult<Repo>
 }

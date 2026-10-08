@@ -59,6 +59,62 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun migrate2To3_addsRemoteKeysTable() {
+        helper.createDatabase(TEST_DB, 2).close()
+
+        val db = helper.runMigrationsAndValidate(
+            TEST_DB,
+            3,
+            true,
+            ArchitectureDatabase.MIGRATION_2_3,
+        )
+
+        // The table exists and accepts the shape the entity expects. Validation above already
+        // compared it against 3.json; this proves it is usable, not just structurally equal.
+        db.execSQL(
+            """
+            INSERT INTO remote_keys (query_key, next_page, total_count, updated_at)
+            VALUES ('kotlin', 2, 1234, 0)
+            """.trimIndent(),
+        )
+        db.query("SELECT next_page FROM remote_keys WHERE query_key = 'kotlin'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+        }
+    }
+
+    /**
+     * Migrating across two versions at once is the case real users hit: someone skips an
+     * update and jumps from 1 straight to 3. Room chains the registered migrations, but only
+     * if both are passed in — forgetting one here is how that crash reaches production.
+     */
+    @Test
+    fun migrate1To3_chainsBothMigrations() {
+        helper.createDatabase(TEST_DB, 1).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO repos (id, name, owner, description, stars, language)
+                VALUES (7, 'coil', 'coil-kt', 'Image loading', 11300, 'Kotlin')
+                """.trimIndent(),
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(
+            TEST_DB,
+            3,
+            true,
+            ArchitectureDatabase.MIGRATION_1_2,
+            ArchitectureDatabase.MIGRATION_2_3,
+        )
+
+        db.query("SELECT name, fetched_at FROM repos WHERE id = 7").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("coil", cursor.getString(0))
+            assertEquals(0L, cursor.getLong(1))
+        }
+    }
+
     private companion object {
         const val TEST_DB = "migration-test.db"
     }

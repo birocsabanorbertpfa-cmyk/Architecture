@@ -23,6 +23,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import hu.csabi.architecture.feature.lab.CoroutineLabScreen
 import hu.csabi.architecture.feature.lab.FlowLabScreen
 import hu.csabi.architecture.feature.network.NetworkLabScreen
+import hu.csabi.architecture.feature.paging.PagedSearchScreen
 import hu.csabi.architecture.feature.search.RepoSearchRoute
 import hu.csabi.architecture.ui.theme.ArchitectureTheme
 
@@ -47,12 +48,13 @@ private enum class LabTab(val title: String) {
     Flow("03 · Flow"),
     Network("04 · Network"),
     Search("07 · Search"),
+    Paging("09 · Paging"),
 }
 
 @Composable
 private fun LabHost() {
     // rememberSaveable so the selected tab survives configuration changes.
-    var selected by rememberSaveable { mutableStateOf(LabTab.Search) }
+    var selected by rememberSaveable { mutableStateOf(LabTab.Paging) }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
@@ -70,6 +72,7 @@ private fun LabHost() {
                 LabTab.Flow -> FlowLabScreen()
                 LabTab.Network -> NetworkLabScreen()
                 LabTab.Search -> RepoSearchRoute()
+                LabTab.Paging -> PagedSearchScreen()
             }
         }
     }

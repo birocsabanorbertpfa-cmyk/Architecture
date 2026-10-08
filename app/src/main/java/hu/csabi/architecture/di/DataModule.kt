@@ -73,6 +73,7 @@ object OfflineDataModule {
     ): RepoRepository = DefaultRepoRepository(
         remote = FakeRemoteDataSource(failureRate = 0.2f),
         dao = database.repoDao(),
+        database = database,
         dispatchers = dispatchers,
     )
 

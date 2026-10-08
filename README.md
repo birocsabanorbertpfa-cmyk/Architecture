@@ -20,7 +20,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 06 | Hilt | modules, scopes, qualifiers, multibinding | ✅ |
 | 07 | MVVM + Compose state | UiState, unidirectional data flow, reducer, side effects | ✅ |
 | 08 | Room | offline-first, single source of truth, migrations | ✅ |
-| 09 | Paging 3 | RemoteMediator, Compose integration | ⬜ |
+| 09 | Paging 3 | RemoteMediator, remote keys, load states | ✅ |
 | 10 | Unit testing | MockK, Turbine, runTest/TestDispatcher, fakes | ⬜ |
 | 11 | UI testing | Compose test, Hilt test modules, robot pattern | ⬜ |
 | 12 | Multi-module | :core / :feature split, build-logic convention plugins | ⬜ |
@@ -44,6 +44,9 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 - `RepoRepository` in `domain`, `DefaultRepoRepository` in `data` — dependency inversion,
   so the domain compiles without knowing Retrofit or GitHub exist.
 - `SearchRepositoriesUseCase` — validation and ranking rules in one testable place.
+- Paging 3 with a `RemoteMediator`: Room's `PagingSource` reads pages, the mediator fetches
+  and *writes* them, so scrolling a loaded list works offline. Pagination state lives in a
+  `remote_keys` table, and the GitHub 1000-result cap is part of the end-of-pagination rule.
 - Room as the **single source of truth**: the network only writes, the UI only reads
   storage, so the screen works offline and two observers can never disagree. Freshness is a
   `fetched_at` column, not a guess.

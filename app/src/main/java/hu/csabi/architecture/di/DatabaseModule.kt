@@ -8,6 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import hu.csabi.architecture.data.local.ArchitectureDatabase
+import hu.csabi.architecture.data.local.RemoteKeyDao
 import hu.csabi.architecture.data.local.RepoDao
 import javax.inject.Singleton
 
@@ -33,7 +34,10 @@ object DatabaseModule {
             // Registering the migration is what makes the schema change survivable. Without
             // this line Room throws IllegalStateException on upgrade, which is at least
             // honest — unlike fallbackToDestructiveMigration(), which deletes the data.
-            .addMigrations(ArchitectureDatabase.MIGRATION_1_2)
+            .addMigrations(
+                ArchitectureDatabase.MIGRATION_1_2,
+                ArchitectureDatabase.MIGRATION_2_3,
+            )
             .build()
 
     /**
@@ -44,4 +48,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun repoDao(database: ArchitectureDatabase): RepoDao = database.repoDao()
+
+    @Provides
+    @Singleton
+    fun remoteKeyDao(database: ArchitectureDatabase): RemoteKeyDao = database.remoteKeyDao()
 }

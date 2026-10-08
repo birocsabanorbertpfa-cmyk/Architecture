@@ -1,5 +1,6 @@
 package hu.csabi.architecture.data.local
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
@@ -36,6 +37,35 @@ interface RepoDao {
 
     @Query("SELECT * FROM repos ORDER BY stars DESC")
     fun observeAll(): Flow<List<RepoEntity>>
+
+    /**
+     * Lesson 09 — Room generates the `PagingSource` from this query.
+     *
+     * Paging therefore reads **only** from the database; the network's job is to fill the
+     * table, which is the same single-source-of-truth rule as lesson 08. Room also
+     * invalidates this source automatically when a row changes, so an appended page shows
+     * up without anyone telling the list to refresh.
+     *
+     * Ordering has to be stable, or pages overlap and items jump: `stars DESC, id` adds the
+     * primary key as a tiebreaker so two repos with equal stars always come out in the same
+     * order. The remote call asks for `sort=stars&order=desc`, so this matches the server.
+     */
+    @Query(
+        """
+        SELECT * FROM repos
+        WHERE name LIKE '%' || :needle || '%' OR language LIKE '%' || :needle || '%'
+        ORDER BY stars DESC, id ASC
+        """,
+    )
+    fun pagingSource(needle: String): PagingSource<Int, RepoEntity>
+
+    @Query(
+        """
+        DELETE FROM repos
+        WHERE name LIKE '%' || :needle || '%' OR language LIKE '%' || :needle || '%'
+        """,
+    )
+    suspend fun deleteMatching(needle: String)
 
     /** Used to decide whether the cached rows are still worth trusting. */
     @Query(

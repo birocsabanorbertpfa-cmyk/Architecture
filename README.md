@@ -21,7 +21,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 07 | MVVM + Compose state | UiState, unidirectional data flow, reducer, side effects | ✅ |
 | 08 | Room | offline-first, single source of truth, migrations | ✅ |
 | 09 | Paging 3 | RemoteMediator, remote keys, load states | ✅ |
-| 10 | Unit testing | MockK, Turbine, runTest/TestDispatcher, fakes | ⬜ |
+| 10 | Unit testing | MockK, Turbine, runTest, MockWebServer, fakes vs mocks | ✅ |
 | 11 | UI testing | Compose test, Hilt test modules, robot pattern | ⬜ |
 | 12 | Multi-module | :core / :feature split, build-logic convention plugins | ⬜ |
 | 13 | Advanced async | channelFlow, custom operators, WorkManager, retry | ⬜ |
@@ -44,6 +44,9 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 - `RepoRepository` in `domain`, `DefaultRepoRepository` in `data` — dependency inversion,
   so the domain compiles without knowing Retrofit or GitHub exist.
 - `SearchRepositoriesUseCase` — validation and ranking rules in one testable place.
+- 46 JVM unit tests covering the domain rules, the ViewModel's reducer and debounce on a
+  virtual clock, the repository's offline-first behaviour, and the whole network stack
+  against `MockWebServer` — fakes where state matters, mocks where interactions do.
 - Paging 3 with a `RemoteMediator`: Room's `PagingSource` reads pages, the mediator fetches
   and *writes* them, so scrolling a loaded list works offline. Pagination state lives in a
   `remote_keys` table, and the GitHub 1000-result cap is part of the end-of-pagination rule.
@@ -86,6 +89,8 @@ Dependencies point inwards: `feature` → `domain` ← `data`. Only `di` knows e
 ./gradlew :app:assembleDebug
 ./gradlew :app:testDebugUnitTest
 ```
+
+Unit tests need no device: they run on the JVM in a few seconds.
 
 The instrumented tests (including the Room migration test) need a device or emulator:
 

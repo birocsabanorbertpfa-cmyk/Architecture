@@ -29,7 +29,9 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Lesson 11: a custom runner that swaps in HiltTestApplication, so instrumented
+        // tests get a graph they can replace modules in.
+        testInstrumentationRunner = "hu.csabi.architecture.HiltTestRunner"
 
         buildConfigField("String", "GITHUB_TOKEN", "\"$githubToken\"")
     }
@@ -56,6 +58,14 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    testOptions {
+        unitTests {
+            // Lesson 11: Robolectric needs the merged resources and the manifest to inflate
+            // anything; without this a Compose test on the JVM fails looking for resources.
+            isIncludeAndroidResources = true
+        }
     }
 }
 
@@ -108,7 +118,17 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.truth)
     testImplementation(libs.okhttp.mockwebserver)
+
+    // Lesson 11: Compose tests on the JVM. Robolectric provides the Android runtime, so the
+    // same test code runs in seconds in CI instead of needing an emulator.
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.ui.test.junit4)
+    testImplementation(libs.androidx.ui.test.manifest)
     androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
+    androidTestImplementation(libs.truth)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

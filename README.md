@@ -22,7 +22,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 08 | Room | offline-first, single source of truth, migrations | ✅ |
 | 09 | Paging 3 | RemoteMediator, remote keys, load states | ✅ |
 | 10 | Unit testing | MockK, Turbine, runTest, MockWebServer, fakes vs mocks | ✅ |
-| 11 | UI testing | Compose test, Hilt test modules, robot pattern | ⬜ |
+| 11 | UI testing | Compose tests on Robolectric, Hilt @TestInstallIn, end-to-end | ✅ |
 | 12 | Multi-module | :core / :feature split, build-logic convention plugins | ⬜ |
 | 13 | Advanced async | channelFlow, custom operators, WorkManager, retry | ⬜ |
 | 14 | Kotlin performance | inline/value class trade-offs, KSP | ⬜ |
@@ -44,9 +44,11 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 - `RepoRepository` in `domain`, `DefaultRepoRepository` in `data` — dependency inversion,
   so the domain compiles without knowing Retrofit or GitHub exist.
 - `SearchRepositoriesUseCase` — validation and ranking rules in one testable place.
-- 46 JVM unit tests covering the domain rules, the ViewModel's reducer and debounce on a
+- 54 JVM unit tests covering the domain rules, the ViewModel's reducer and debounce on a
   virtual clock, the repository's offline-first behaviour, and the whole network stack
   against `MockWebServer` — fakes where state matters, mocks where interactions do.
+- Compose UI tests that run on the JVM through Robolectric (no emulator), plus Hilt-driven
+  end-to-end tests on a device with `@TestInstallIn` swapping only the network.
 - Paging 3 with a `RemoteMediator`: Room's `PagingSource` reads pages, the mediator fetches
   and *writes* them, so scrolling a loaded list works offline. Pagination state lives in a
   `remote_keys` table, and the GitHub 1000-result cap is part of the end-of-pagination rule.

@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -89,6 +90,21 @@ fun RepoSearchRoute(modifier: Modifier = Modifier) {
 }
 
 /**
+ * Lesson 11 — stable handles for tests.
+ *
+ * Queries by visible text break on the next copy edit, and a test asserting English prose is
+ * really asserting the translator's work. A tag is an explicit, stable contract between the
+ * screen and its tests. Used sparingly: anything a user can read is still queried by text,
+ * because that is what the user actually sees.
+ */
+object SearchTestTags {
+    const val QUERY_FIELD = "search:query"
+    const val PROGRESS = "search:progress"
+    const val ERROR_BANNER = "search:error"
+    const val RESULT_LIST = "search:results"
+}
+
+/**
  * Stateless by construction: it receives a state and a single event sink. There is no
  * ViewModel reference, no `remember` holding business state, and nothing to mock in a test.
  */
@@ -107,13 +123,15 @@ fun RepoSearchScreen(
             onValueChange = { onEvent(RepoSearchEvent.QueryChanged(it)) },
             label = { Text(stringResource(R.string.search_hint)) },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag(SearchTestTags.QUERY_FIELD),
         )
 
         // A thin bar rather than a full-screen spinner: the list below stays usable while a
         // refresh is in flight, which is only possible because state carries both at once.
         if (state.isLoading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().testTag(SearchTestTags.PROGRESS),
+            )
         }
 
         state.error?.let { error ->
@@ -137,7 +155,7 @@ fun RepoSearchScreen(
 
 @Composable
 private fun RepoList(repos: List<Repo>, onClick: (Repo) -> Unit) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    LazyColumn(modifier = Modifier.fillMaxSize().testTag(SearchTestTags.RESULT_LIST)) {
         // `key` keeps item identity stable across reorders, so Compose reuses the right
         // nodes instead of rebuilding the list on every result change.
         items(items = repos, key = { it.id.value }) { repo ->
@@ -175,7 +193,7 @@ private fun RepoRow(repo: Repo, onClick: () -> Unit) {
 
 @Composable
 private fun ErrorBanner(message: UiText, onRetry: () -> Unit, onDismiss: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(modifier = Modifier.fillMaxWidth().testTag(SearchTestTags.ERROR_BANNER)) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(message.asString(), style = MaterialTheme.typography.bodyMedium)
             Row {

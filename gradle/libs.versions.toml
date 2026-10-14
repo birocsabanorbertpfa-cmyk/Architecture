@@ -20,6 +20,7 @@ paging = "3.5.2"
 mockk = "1.14.11"
 turbine = "1.2.1"
 truth = "1.4.5"
+robolectric = "4.17"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -58,6 +59,8 @@ okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver",
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }

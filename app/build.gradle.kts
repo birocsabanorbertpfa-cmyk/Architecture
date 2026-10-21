@@ -65,6 +65,15 @@ android {
             // Lesson 11: Robolectric needs the merged resources and the manifest to inflate
             // anything; without this a Compose test on the JVM fails looking for resources.
             isIncludeAndroidResources = true
+
+            all {
+                it.maxHeapSize = "1g"
+                // Each fork is a full JVM, and a Robolectric fork loads an Android runtime
+                // into it. Gradle defaults to one fork per CPU, which on an 8-core machine
+                // means eight Android runtimes at once - the fastest way to start swapping.
+                it.maxParallelForks = 1
+                it.jvmArgs("-XX:MaxMetaspaceSize=512m")
+            }
         }
     }
 }

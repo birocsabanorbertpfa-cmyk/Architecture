@@ -23,7 +23,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 09 | Paging 3 | RemoteMediator, remote keys, load states | ✅ |
 | 10 | Unit testing | MockK, Turbine, runTest, MockWebServer, fakes vs mocks | ✅ |
 | 11 | UI testing | Compose tests on Robolectric, Hilt @TestInstallIn, end-to-end | ✅ |
-| 12 | Multi-module | :core / :feature split, build-logic convention plugins | ⬜ |
+| 12 | Multi-module | :core / :domain / :data / :feature split, convention plugins | ✅ |
 | 13 | Advanced async | channelFlow, custom operators, WorkManager, retry | ⬜ |
 | 14 | Kotlin performance | inline/value class trade-offs, KSP | ⬜ |
 | 15 | CI + code quality | GitHub Actions, detekt/ktlint, coverage, R8 | ⬜ |
@@ -73,17 +73,29 @@ Retrofit, Hilt, Room, Paging and a full test suite.
   (`debounce` → `distinctUntilChanged` → `flatMapLatest` → `catch` → `stateIn`), with
   one-off events on a `SharedFlow` kept separate from screen state.
 
-## Package layout
+## Modules
 
 ```
-core/      shared kernel: AppResult, AppError, dispatchers, Kotlin helpers
-domain/    model, repository contracts, use cases — no Android, no network
-data/      remote (Retrofit), local (Room), fake, repository implementations
-feature/   Compose screens and ViewModels
-di/        Hilt modules (the composition root)
+:app              composition root: Application, MainActivity, nothing else
+:feature:search   the search screen (Compose + ViewModel)
+:feature:labs     the coroutine, Flow, error-mapping and paging labs
+:data             Retrofit, Room, Paging mediator, Hilt modules
+:domain           model, repository contracts, use cases   ← plain JVM module
+:core:common      AppResult, AppError, dispatchers          ← plain JVM module
+:core:ui          UiText, theme
+:core:testing     shared fakes, rules and test fixtures     ← plain JVM module
 ```
 
-Dependencies point inwards: `feature` → `domain` ← `data`. Only `di` knows every layer.
+```
+:app ──> :feature:*  ──┐
+  │                     ├──> :domain ──> :core:common
+  └────> :data ─────────┘
+```
+
+`:data` and `:feature:*` cannot see each other, and `:domain` and `:core:common` are plain
+JVM modules — so `import android.*` in the domain layer is a compile error rather than a
+convention someone has to remember. `build-logic` holds the convention plugins, and
+`architecture.android.feature` is the only place a feature's dependencies are declared.
 
 ## Build
 

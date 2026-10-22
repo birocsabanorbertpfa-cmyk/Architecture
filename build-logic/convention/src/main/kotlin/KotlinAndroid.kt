@@ -1,6 +1,8 @@
 import com.android.build.api.dsl.CommonExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
+import org.gradle.api.tasks.testing.Test
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
@@ -20,11 +22,16 @@ internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension<*, 
             minSdk = MIN_SDK
         }
 
+        // Robolectric cannot inflate anything without the merged resources and manifest.
+        testOptions.unitTests.isIncludeAndroidResources = true
+
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_17
             targetCompatibility = JavaVersion.VERSION_17
         }
     }
+
+    configureTestTasks()
 
     extensions.configure(KotlinAndroidProjectExtension::class.java) {
         compilerOptions {
@@ -37,6 +44,22 @@ internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension<*, 
                 "-Xconsistent-data-class-copy-visibility",
             )
         }
+    }
+}
+
+/**
+ * Lesson 12 — the test memory budget, in one place instead of per module.
+ *
+ * Gradle forks one test JVM per CPU by default. With eight modules on a 16 GB machine that
+ * is a reliable way to start swapping, and a Robolectric fork loads a whole Android runtime
+ * into each one. Capping it here means a new module inherits the budget rather than
+ * rediscovering the problem.
+ */
+internal fun Project.configureTestTasks() {
+    tasks.withType<Test>().configureEach {
+        maxHeapSize = "1g"
+        maxParallelForks = 1
+        jvmArgs("-XX:MaxMetaspaceSize=512m")
     }
 }
 

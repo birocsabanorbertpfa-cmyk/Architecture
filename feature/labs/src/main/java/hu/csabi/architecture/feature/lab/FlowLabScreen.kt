@@ -28,9 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import hu.csabi.architecture.labs.LabScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import hu.csabi.architecture.domain.model.Repo
 
+@LabScreen(title = "03 · Flow", order = 3)
 @Composable
 fun FlowLabScreen(
     modifier: Modifier = Modifier,

@@ -20,7 +20,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import hu.csabi.architecture.labs.LabScreen
 
+@LabScreen(title = "13 · Async", order = 13)
 @Composable
 fun AsyncLabScreen(
     modifier: Modifier = Modifier,

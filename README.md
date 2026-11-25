@@ -25,7 +25,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 11 | UI testing | Compose tests on Robolectric, Hilt @TestInstallIn, end-to-end | ✅ |
 | 12 | Multi-module | :core / :domain / :data / :feature split, convention plugins | ✅ |
 | 13 | Advanced async | callbackFlow, custom operators, WorkManager, backoff | ✅ |
-| 14 | Kotlin performance | inline/value class trade-offs, KSP | ⬜ |
+| 14 | Kotlin performance | inline/value class trade-offs, a hand-written KSP processor | ✅ |
 | 15 | CI + code quality | GitHub Actions, detekt/ktlint, coverage, R8 | ⬜ |
 | 16 | Runtime performance | Compose stability, baseline profiles, measurement | ⬜ |
 
@@ -49,6 +49,9 @@ Retrofit, Hilt, Room, Paging and a full test suite.
   against `MockWebServer` — fakes where state matters, mocks where interactions do.
 - Compose UI tests that run on the JVM through Robolectric (no emulator), plus Hilt-driven
   end-to-end tests on a device with `@TestInstallIn` swapping only the network.
+- A hand-written KSP processor: `@LabScreen` on a composable, and the lab tab list is
+  generated at compile time — no reflection, no R8 keep rule, and a screen that is not
+  callable without arguments fails the build.
 - `callbackFlow` over `ConnectivityManager` behind a JVM-module port, plus custom operators
   (`retryWithBackoff` with jitter, `throttleFirst`, `restartWhen`) and a WorkManager sync
   worker wired through Hilt.
@@ -87,6 +90,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 :core:common      AppResult, AppError, dispatchers          ← plain JVM module
 :core:ui          UiText, theme
 :core:testing     shared fakes, rules and test fixtures     ← plain JVM module
+:tools:lab-*      the @LabScreen annotation and its KSP processor
 ```
 
 ```

@@ -19,8 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import hu.csabi.architecture.labs.LabScreen
 import hu.csabi.architecture.domain.model.Repo
 
+@LabScreen(title = "04 · Errors", order = 4)
 @Composable
 fun NetworkLabScreen(
     modifier: Modifier = Modifier,

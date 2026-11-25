@@ -19,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import hu.csabi.architecture.labs.LabScreen
 
+@LabScreen(title = "02 · Coroutines", order = 2)
 @Composable
 fun CoroutineLabScreen(
     modifier: Modifier = Modifier,

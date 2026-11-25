@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import hu.csabi.architecture.labs.LabScreen
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
@@ -32,6 +33,7 @@ import hu.csabi.architecture.domain.model.Repo
 /**
  * Lesson 09 — rendering a paged list, including the states nobody remembers to handle.
  */
+@LabScreen(title = "09 · Paging", order = 9)
 @Composable
 fun PagedSearchScreen(
     modifier: Modifier = Modifier,

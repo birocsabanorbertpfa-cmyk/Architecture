@@ -9,22 +9,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import dagger.hilt.android.AndroidEntryPoint
-import hu.csabi.architecture.feature.async.AsyncLabScreen
-import hu.csabi.architecture.feature.lab.CoroutineLabScreen
-import hu.csabi.architecture.feature.lab.FlowLabScreen
-import hu.csabi.architecture.feature.network.NetworkLabScreen
-import hu.csabi.architecture.feature.paging.PagedSearchScreen
+import hu.csabi.architecture.feature.labs.LabScreenEntry
+import hu.csabi.architecture.feature.labs.generatedLabScreens
 import hu.csabi.architecture.feature.search.RepoSearchRoute
 import hu.csabi.architecture.ui.theme.ArchitectureTheme
 
@@ -44,45 +41,49 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class LabTab(val title: String) {
-    Coroutines("02 · Coroutines"),
-    Flow("03 · Flow"),
-    Network("04 · Network"),
-    Search("07 · Search"),
-    Paging("09 · Paging"),
-    Async("13 · Async"),
-}
-
+/**
+ * Lesson 14 — the tab list is generated, not maintained.
+ *
+ * This used to be an enum with one entry per lab plus a `when` that mapped each entry to a
+ * composable: two places to edit for every new screen, and nothing to stop you editing only
+ * one. Now each lab carries `@LabScreen(title, order)` and the KSP processor emits
+ * [generatedLabScreens] at compile time.
+ *
+ * What that buys, in order of importance:
+ *  - a new lab cannot be forgotten, because there is nothing to remember
+ *  - the list is built during compilation, so there is no startup reflection and no R8 keep
+ *    rule
+ *  - a lab whose composable is not callable without arguments fails the **build**, with the
+ *    processor pointing at the function
+ *
+ * The search screen is added by hand on purpose: it lives in `:feature:search`, and the
+ * processor only sees the module it runs in. Generated registries are per module — worth
+ * knowing before reaching for one.
+ */
 @Composable
 private fun LabHost() {
+    val tabs = remember {
+        generatedLabScreens + LabScreenEntry(title = "07 · Search", order = 7) { RepoSearchRoute() }
+    }
+    val ordered = remember(tabs) { tabs.sortedBy { it.order } }
+
     // rememberSaveable so the selected tab survives configuration changes.
-    var selected by rememberSaveable { mutableStateOf(LabTab.Async) }
+    var selectedTitle by rememberSaveable { mutableStateOf(ordered.last().title) }
+    val selectedIndex = ordered.indexOfFirst { it.title == selectedTitle }.coerceAtLeast(0)
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            TabRow(selectedTabIndex = selected.ordinal) {
-                for (tab in LabTab.entries) {
+            // Scrollable, because the number of tabs is now whatever the processor found.
+            ScrollableTabRow(selectedTabIndex = selectedIndex) {
+                ordered.forEachIndexed { index, tab ->
                     Tab(
-                        selected = tab == selected,
-                        onClick = { selected = tab },
+                        selected = index == selectedIndex,
+                        onClick = { selectedTitle = tab.title },
                         text = { Text(tab.title, style = MaterialTheme.typography.labelLarge) },
                     )
                 }
             }
-            when (selected) {
-                LabTab.Coroutines -> CoroutineLabScreen()
-                LabTab.Flow -> FlowLabScreen()
-                LabTab.Network -> NetworkLabScreen()
-                LabTab.Search -> RepoSearchRoute()
-                LabTab.Paging -> PagedSearchScreen()
-                LabTab.Async -> AsyncLabScreen()
-            }
+            ordered[selectedIndex].content()
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun LabHostPreview() {
-    ArchitectureTheme { LabHost() }
 }

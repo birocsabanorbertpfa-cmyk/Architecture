@@ -53,10 +53,17 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.paging.runtime)
 
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.hilt.work)
+    // androidx.hilt's own processor, separate from Dagger's: it is what generates the
+    // assisted-injection factory for @HiltWorker.
+    ksp(libs.androidx.hilt.compiler)
+
     testImplementation(project(":core:testing"))
     testImplementation(libs.okhttp.mockwebserver)
 
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.truth)
+    androidTestImplementation(libs.androidx.work.testing)
 }

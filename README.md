@@ -24,7 +24,7 @@ Retrofit, Hilt, Room, Paging and a full test suite.
 | 10 | Unit testing | MockK, Turbine, runTest, MockWebServer, fakes vs mocks | ✅ |
 | 11 | UI testing | Compose tests on Robolectric, Hilt @TestInstallIn, end-to-end | ✅ |
 | 12 | Multi-module | :core / :domain / :data / :feature split, convention plugins | ✅ |
-| 13 | Advanced async | channelFlow, custom operators, WorkManager, retry | ⬜ |
+| 13 | Advanced async | callbackFlow, custom operators, WorkManager, backoff | ✅ |
 | 14 | Kotlin performance | inline/value class trade-offs, KSP | ⬜ |
 | 15 | CI + code quality | GitHub Actions, detekt/ktlint, coverage, R8 | ⬜ |
 | 16 | Runtime performance | Compose stability, baseline profiles, measurement | ⬜ |
@@ -49,6 +49,9 @@ Retrofit, Hilt, Room, Paging and a full test suite.
   against `MockWebServer` — fakes where state matters, mocks where interactions do.
 - Compose UI tests that run on the JVM through Robolectric (no emulator), plus Hilt-driven
   end-to-end tests on a device with `@TestInstallIn` swapping only the network.
+- `callbackFlow` over `ConnectivityManager` behind a JVM-module port, plus custom operators
+  (`retryWithBackoff` with jitter, `throttleFirst`, `restartWhen`) and a WorkManager sync
+  worker wired through Hilt.
 - Paging 3 with a `RemoteMediator`: Room's `PagingSource` reads pages, the mediator fetches
   and *writes* them, so scrolling a loaded list works offline. Pagination state lives in a
   `remote_keys` table, and the GitHub 1000-result cap is part of the end-of-pagination rule.

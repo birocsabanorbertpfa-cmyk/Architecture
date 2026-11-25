@@ -21,6 +21,8 @@ mockk = "1.14.11"
 turbine = "1.2.1"
 truth = "1.4.5"
 robolectric = "4.17"
+work = "2.11.2"
+hiltExt = "1.2.0"
 
 [libraries]
 # Lesson 12: the Gradle plugins as *libraries*, so the convention plugins in build-logic can
@@ -70,6 +72,10 @@ hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testi
 javax-inject = { group = "javax.inject", name = "javax.inject", version = "1" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
+androidx-work-runtime = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "work" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltExt" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltExt" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version = "1.7.0" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }

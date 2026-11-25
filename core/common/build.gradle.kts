@@ -20,4 +20,7 @@ dependencies {
     // Plain JUnit, not :core:testing - that module depends on this one, and a dependency
     // cycle between modules is a hard error rather than a style question.
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.truth)
 }

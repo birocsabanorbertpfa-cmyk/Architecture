@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import dagger.hilt.android.AndroidEntryPoint
+import hu.csabi.architecture.feature.async.AsyncLabScreen
 import hu.csabi.architecture.feature.lab.CoroutineLabScreen
 import hu.csabi.architecture.feature.lab.FlowLabScreen
 import hu.csabi.architecture.feature.network.NetworkLabScreen
@@ -49,12 +50,13 @@ private enum class LabTab(val title: String) {
     Network("04 · Network"),
     Search("07 · Search"),
     Paging("09 · Paging"),
+    Async("13 · Async"),
 }
 
 @Composable
 private fun LabHost() {
     // rememberSaveable so the selected tab survives configuration changes.
-    var selected by rememberSaveable { mutableStateOf(LabTab.Paging) }
+    var selected by rememberSaveable { mutableStateOf(LabTab.Async) }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
@@ -73,6 +75,7 @@ private fun LabHost() {
                 LabTab.Network -> NetworkLabScreen()
                 LabTab.Search -> RepoSearchRoute()
                 LabTab.Paging -> PagedSearchScreen()
+                LabTab.Async -> AsyncLabScreen()
             }
         }
     }
